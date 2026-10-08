@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id), rnd=(a,b)=>a+Math.random()*(b-a);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#18221e');scene.fog=new THREE.FogExp2('#18221e',.014);
 const camera=new THREE.PerspectiveCamera(39,innerWidth/innerHeight,.1,100);let baseCamera=new THREE.Vector3(0,6.7,24);let zoom=1;const focus=new THREE.Vector3(0,5.1,0);
 camera.position.copy(baseCamera);camera.lookAt(focus);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.localClippingEnabled=true;renderer.transmissionResolutionScale=.5;$('stage').appendChild(renderer.domElement);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.localClippingEnabled=true;renderer.transmissionResolutionScale=1;$('stage').appendChild(renderer.domElement);
 const ambient=new THREE.HemisphereLight(0xdbe7e3,0x3d2a1c,.60);scene.add(ambient);
 const key=new THREE.DirectionalLight(0xffe5bc,2.0);key.position.set(-5,9,6);scene.add(key);
 const fill=new THREE.DirectionalLight(0xd6edff,.65);fill.position.set(5,6,8);scene.add(fill);
