@@ -2,7 +2,8 @@
 const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.name==='JAMESON'?0x93c59a:0xffffff,roughness:.06,transmission:1,thickness:.055,ior:1.51,opacity:1,envMapIntensity:.85,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.8}));
 const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.glass,metalness:.12,roughness:.10,transparent:true,opacity:.69,side:THREE.DoubleSide,envMapIntensity:1.7,depthWrite:false}));
 const geometries=[];let bottles=[],planks=[],debris=[],balls=[],puddles=[],ripples=[],breakQueue=new Map(),broken=0,shots=0,started=false,slow=false,shake=0,simTime=0,resetAt=0;
-const N=8,R=4,TAU=Math.PI*2;
+const N=8,R=4,TAU=Math.PI*2;let gameMode='pyramid';
+function countBroken(ob){if(ob.counted)return;ob.counted=true;broken++;if(gameMode==='pyramid')$('broken').innerHTML=String(broken).padStart(2,'0')+'<span style="display:inline;font-size:14px"> / 15</span>';}
 const bottleProfiles=[
 [[0,.90],[.018,.98],[.05,1],[.57,1],[.615,.99],[.65,.95],[.69,.78],[.735,.48],[.765,.32],[.84,.31],[.86,.34],[.88,.31],[.98,.31],[1,.32]],
 [[0,.89],[.022,.98],[.065,1],[.57,1],[.62,.98],[.655,.91],[.70,.70],[.75,.45],[.79,.31],[.83,.31],[.845,.36],[.875,.36],[.9,.31],[1,.31]],
