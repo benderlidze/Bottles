@@ -42,9 +42,23 @@ function refreshRoundHUD(){if(gameMode!=='toss'){$('broken').textContent=String(
 rebuild();$('start').disabled=false;$('start').textContent='ПЕРВЫЙ БРОСОК';let prev=performance.now(),acc=0;const step=1/120,maxPhysicsSteps=8;
 // Shadows are re-rendered only while something moves.
 renderer.shadowMap.autoUpdate=false;let shadowFrames=3,lastShadowAt=0;$('reset').addEventListener('click',()=>shadowFrames=3);addEventListener('keydown',e=>{if(e.key.toLowerCase()==='r')shadowFrames=3;});
-// Dynamic resolution: drop pixel ratio when frames get slow, raise it back when there is headroom.
-const maxPR=Math.min(devicePixelRatio,1.5),minPR=Math.min(.7,maxPR);let pixelRatio=maxPR,prCeiling=maxPR,frameEMA=16.7,prChangedAt=0,prRaisedAt=-1e9;
-function adaptQuality(now,dtSec){if(document.hidden)return;frameEMA+=(Math.min(100,dtSec*1000)-frameEMA)*.06;if(now-prChangedAt<1200)return;if(frameEMA>21&&pixelRatio>minPR){if(now-prRaisedAt<3500)prCeiling=Math.max(minPR,pixelRatio-.1);pixelRatio=Math.max(minPR,pixelRatio-.15);renderer.setPixelRatio(pixelRatio);renderer.transmissionResolutionScale=pixelRatio<1?.5:.7;prChangedAt=now;}else if(frameEMA<17.6&&pixelRatio<prCeiling&&now-prChangedAt>4000){pixelRatio=Math.min(prCeiling,pixelRatio+.1);renderer.setPixelRatio(pixelRatio);prChangedAt=prRaisedAt=now;}}
+// Keep opaque print at least one rendered pixel per CSS pixel. Reduce the
+// separate refraction buffer first; a slow burst must not permanently cap quality.
+const maxPR=Math.min(devicePixelRatio,2),minPR=Math.min(1,maxPR);let pixelRatio=maxPR,frameEMA=16.7,prChangedAt=0;
+function adaptQuality(now,dtSec){
+ if(document.hidden)return;frameEMA+=(Math.min(100,dtSec*1000)-frameEMA)*.06;if(now-prChangedAt<1500)return;
+ if(frameEMA>24){
+  if(renderer.transmissionResolutionScale>.5)renderer.transmissionResolutionScale=.5;
+  else if(pixelRatio>minPR){pixelRatio=Math.max(minPR,pixelRatio-.125);renderer.setPixelRatio(pixelRatio);}
+  else return;
+  prChangedAt=now;
+ }else if(frameEMA<18&&now-prChangedAt>5000){
+  if(pixelRatio<maxPR){pixelRatio=Math.min(maxPR,pixelRatio+.125);renderer.setPixelRatio(pixelRatio);}
+  else if(renderer.transmissionResolutionScale<.7)renderer.transmissionResolutionScale=.7;
+  else return;
+  prChangedAt=now;
+ }
+}
 const vec=new THREE.Vector3(),normal=new THREE.Vector3(),invQ=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0);
 // Sleeping stack bodies never notice that their support moved or broke away -> they hang in the air. Wake sleeping bottles/planks above anything that moves.
 const stackBodies=[];function wakeStack(){stackBodies.length=0;for(const o of bottles)stackBodies.push(o.body);for(const o of planks)stackBodies.push(o.body);for(const m of stackBodies){if(m.sleepState===2||(m.velocity.lengthSquared()<.01&&m.angularVelocity.lengthSquared()<.01))continue;for(const s of stackBodies)if(s.sleepState===2&&s.position.y>m.position.y-.6&&Math.abs(s.position.x-m.position.x)<3&&Math.abs(s.position.z-m.position.z)<2.5)s.wakeUp();for(const d of debris){const b=d.body;if(b.sleepState===2&&b.position.y>.5&&b.position.y>m.position.y-.6&&Math.abs(b.position.x-m.position.x)<3&&Math.abs(b.position.z-m.position.z)<2.5)b.wakeUp();}}}
