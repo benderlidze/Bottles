@@ -6,7 +6,7 @@ const FR={A:40,cell:.062,thick:.015,seeds:[68,86],minTris:5};
 const fractureTemplates=new Map();
 // Grid shared by all bottles of one brand: vertex positions/normals, triangles (ccw = outward), edge -> triangles.
 function fractureTemplate(b){let T=fractureTemplates.get(b);if(T)return T;
-const A=FR.A,yB=-b.h/2+.035,yT=b.h/2-.02,Y=Math.max(12,Math.round((yT-yB)/FR.cell)),va=[],vy=[],outer=[],inner=[],nrm=[];
+const A=b.giant?Math.round(FR.A*1.5):FR.A,yB=-b.h/2+.035,yT=b.h/2-.02,Y=Math.max(12,Math.round((yT-yB)/FR.cell)),va=[],vy=[],outer=[],inner=[],nrm=[];
 for(let j=0;j<=Y;j++)for(let i=0;i<A;i++){const edge=j===0||j===Y,a=-Math.PI+(i+(edge?0:rnd(-.35,.35)))*TAU/A,y=yB+(j+(edge?0:rnd(-.3,.3)))*(yT-yB)/Y;va.push(a);vy.push(y);outer.push(surfPoint(b,a,y,0));inner.push(surfPoint(b,a,y,FR.thick));nrm.push(surfaceNormal(b,a,y));}
 const id=(i,j)=>j*A+(i%A),tris=[];
 for(let j=0;j<Y;j++)for(let i=0;i<A;i++){const v00=id(i,j),v10=id(i+1,j),v11=id(i+1,j+1),v01=id(i,j+1);if((i+j)%2)tris.push([v00,v10,v11],[v00,v11,v01]);else tris.push([v00,v10,v01],[v10,v11,v01]);}
@@ -20,8 +20,8 @@ T={A,Y,va,vy,dA:TAU/A,dY:(yT-yB)/Y,outer,inner,nrm,tris,edgeTris,key,triC,triP,r
 // Sutherland-Hodgman clip of a polygon in (a,y) against an axis-aligned rectangle.
 function clipRect(poly,x0,x1,y0,y1){for(const [axis,lim,keepGreater]of [[0,x0,true],[0,x1,false],[1,y0,true],[1,y1,false]]){const out=[];for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length],ip=keepGreater?p[axis]>=lim:p[axis]<=lim,iq=keepGreater?q[axis]>=lim:q[axis]<=lim;if(ip)out.push(p);if(ip!==iq){const t=(lim-p[axis])/(q[axis]-p[axis]);out.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t]);}}poly=out;if(!poly.length)break;}return poly;}
 
-function fractureBottle(b,idx){const T=fractureTemplate(b),nT=T.tris.length,seeds=[],want=Math.round(rnd(FR.seeds[0],FR.seeds[1]));
-for(let tries=0;seeds.length<want&&tries<want*40;tries++){const p=T.triC[(Math.random()*nT)|0];if(seeds.some(s=>s.p.distanceTo(p)<.095))continue;seeds.push({p,w:rnd(.7,1.35),ph:[rnd(0,TAU),rnd(0,TAU),rnd(0,TAU)]});}
+function fractureBottle(b,idx){const T=fractureTemplate(b),nT=T.tris.length,seeds=[],want=Math.round(rnd(FR.seeds[0],FR.seeds[1])*(b.giant?1.6:1)),gap=b.giant?.13:.095;
+for(let tries=0;seeds.length<want&&tries<want*40;tries++){const p=T.triC[(Math.random()*nT)|0];if(seeds.some(s=>s.p.distanceTo(p)<gap))continue;seeds.push({p,w:rnd(.7,1.35),ph:[rnd(0,TAU),rnd(0,TAU),rnd(0,TAU)]});}
 // slightly noisy, slightly weighted Voronoi: mostly straight crack lines between junctions, shards of varied size
 const cell=new Int32Array(nT);for(let t=0;t<nT;t++){const c=T.triC[t];let best=1e9,bi=0;for(let s=0;s<seeds.length;s++){const S=seeds[s],d=(c.distanceTo(S.p)+.018*(Math.sin(c.x*9+S.ph[0])+Math.sin(c.y*11+S.ph[1])+Math.sin(c.z*10+S.ph[2])))/S.w;if(d<best){best=d;bi=s;}}cell[t]=bi;}
 const nb=t=>{const tr=T.tris[t],out=[];for(let e=0;e<3;e++)for(const o of T.edgeTris.get(T.key(tr[e],tr[(e+1)%3])))if(o!==t)out.push(o);return out;};
