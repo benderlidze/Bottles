@@ -79,8 +79,9 @@ function damageBottle(ob,hit){
     const bottom=fragment.parts.reduce((a,b)=>a.y0<b.y0?a:b);
     if(ob.holes.length<16)createLeak(ob,bottom);
   }
+  releaseChampagne(ob,fragments,hit);
   const detachedMass=fragments.reduce((sum,f)=>sum+f.body.mass,0),fraction=Math.min(1,detachedMass/GLASS_MASS);
-  const amount=Math.min(ob.fluid,ob.fluid*fraction*.7),number=Math.min(75,Math.ceil(amount/.0015));ob.fluid-=amount;
+  const amount=Math.min(ob.fluid,ob.fluid*fraction*(brands[ob.idx].sparkling?.15:.7)),number=Math.min(75,Math.ceil(amount/.0015));ob.fluid-=amount;
   const p=new THREE.Vector3().copy(ob.body.pointToWorldFrame(new CANNON.Vec3(hit.point.x,hit.point.y,hit.point.z)));
   const direction=new THREE.Vector3(hit.incoming?.x||0,hit.incoming?.y||0,hit.incoming?.z||-1).normalize();
   for(let i=0;i<number;i++)emitDrop(p,new THREE.Vector3().copy(ob.body.velocity).addScaledVector(direction,rnd(.3,1.5)).add(new THREE.Vector3(rnd(-.8,.8),rnd(-.3,.9),rnd(-.6,.6))),ob.idx,amount/number,rnd(.5,1.2));

@@ -94,7 +94,7 @@ function scatterFragments(ob,fragments,hit){
   if(!fragments.length)return;
   const direction=new CANNON.Vec3(hit.incoming?.x||0,hit.incoming?.y||0,hit.incoming?.z||-1);direction.normalize();
   const weights=[],spins=[],torques=[];let totalMass=ob.body.mass,mean=new CANNON.Vec3();
-  for(const f of fragments){const w=Math.exp(-f.localCenter.distanceTo(hit.point)/.55),out=new CANNON.Vec3(f.localCenter.x,0,f.localCenter.z);out.normalize();ob.body.quaternion.vmult(out,out);const v=direction.scale(w*2).vadd(out.scale(.4+w*.4));weights.push(v);mean.vadd(v.scale(f.body.mass),mean);totalMass+=f.body.mass;}
+  for(const f of fragments){const w=Math.exp(-f.localCenter.distanceTo(hit.point)/.55),out=new CANNON.Vec3(f.localCenter.x,0,f.localCenter.z);out.normalize();ob.body.quaternion.vmult(out,out);const v=hit.pressure?out.scale(.7+w*.3):direction.scale(w*2).vadd(out.scale(.4+w*.4));weights.push(v);mean.vadd(v.scale(f.body.mass),mean);totalMass+=f.body.mass;}
   mean.scale(1/totalMass,mean);let kinetic=.5*ob.body.mass*mean.lengthSquared();const angularMomentum=new CANNON.Vec3();
   for(let i=0;i<fragments.length;i++){
     const f=fragments[i];weights[i].vsub(mean,weights[i]);kinetic+=.5*f.body.mass*weights[i].lengthSquared();
@@ -106,7 +106,7 @@ function scatterFragments(ob,fragments,hit){
   const reaction=ob.body.invInertiaWorld.vmult(angularMomentum);kinetic+=.5*angularMomentum.dot(reaction);
   // One shared scale bounds all translational and rotational scatter energy.
   // Remnant reactions balance both linear and angular momentum of the spray.
-  const scale=Math.sqrt(Math.min(hit.energy*.06,2.4)/Math.max(kinetic,.00001));
+  const scale=Math.sqrt((hit.pressure?Math.min(hit.energy,1.2):Math.min(hit.energy*.06,2.4))/Math.max(kinetic,.00001));
   ob.body.velocity.vsub(mean.scale(scale),ob.body.velocity);ob.body.angularVelocity.vsub(reaction.scale(scale),ob.body.angularVelocity);
   for(let i=0;i<fragments.length;i++){fragments[i].body.velocity.vadd(weights[i].scale(scale),fragments[i].body.velocity);fragments[i].body.angularVelocity.vadd(spins[i].scale(scale),fragments[i].body.angularVelocity);}
 }

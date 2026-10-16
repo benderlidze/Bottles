@@ -8,7 +8,7 @@ function tossSay(text,ms=2100){tossSpeaking=true;showToast(text);tossSpeaking=fa
 let toss=null,tossCount=0,tossHits=0,tossStreak=0,tossBest=0,tossNextAt=0,tossOverShown=false;
 function tossHud(){$('broken').innerHTML=String(tossHits).padStart(2,'0')+`<span style="display:inline;font-size:14px"> / ${String(tossCount).padStart(2,'0')}</span>`;$('broken').nextElementSibling.textContent='ПОПАДАНИЯ';}
 function startTossRound(){toss=null;tossCount=tossHits=tossStreak=tossBest=0;tossOverShown=false;tossNextAt=simTime+1.2;tossHud();tossSay('Попадите до приземления. Цельтесь с упреждением!',3000);}
-function removeBottle(ob){const i=bottles.indexOf(ob);if(i<0)return;clearObject(ob.group);for(const part of ob.parts)if(part.attached){part.geo.dispose();part.label?.geometry.dispose();}for(const h of ob.holes)clearObject(h.stream);world.removeBody(ob.body);breakQueue.delete(ob);bottles.splice(i,1);}
+function removeBottle(ob){clearChampagne(ob);const i=bottles.indexOf(ob);if(i<0)return;clearObject(ob.group);for(const part of ob.parts)if(part.attached){part.geo.dispose();part.label?.geometry.dispose();}for(const h of ob.holes)clearObject(h.stream);world.removeBody(ob.body);breakQueue.delete(ob);bottles.splice(i,1);}
 function launchToss(){const side=Math.random()<.5?-1:1,idx=(Math.random()*brands.length)|0,x0=side*rnd(6,7.5),ob=addBottle(x0,.4,idx),level=tossCount/TOSS_ROUND;
 const apexY=rnd(4.5,7),apexX=rnd(-3,3),vy=Math.sqrt(2*9.81*(apexY-ob.body.position.y)),vx=(apexX-x0)/(vy/9.81)*(1+level*.5);
 ob.body.wakeUp();ob.body.velocity.set(vx,vy,0);ob.body.angularVelocity.set(rnd(-1,1),rnd(-1,1),-side*rnd(2,4+level*6));

@@ -80,5 +80,23 @@ function impactSound(x,speed,kind='wood'){
  resonantTone(x,105,.055,Math.min(.12,speed*.009),2);
 }
 function whoosh(power=35){if(ac&&!muted)playBuffer(noiseBuffer,0,.018+power*.00035,.9,0,.05+power*.0007,1,0,750);}
+function champagnePop(ob,strength){
+ if(!ac||muted)return;
+ resonantTone(ob.body.position,165,.09,.12*strength,3);
+ playBuffer(noiseBuffer,ob.body.position,.10*strength,1,0,.075,3,0,400);
+}
+function champagneHiss(ob,intensity){
+ if(!ac||muted||ac.state!=='running'||intensity<.01){ob.foamVoice?.cleanup();ob.foamVoice=null;ob.foamAudio=null;return;}
+ if(!ob.foamVoice||!audioVoices.has(ob.foamVoice)){
+  const output=voiceOutput(ob.body.position,1);if(!output)return;
+  const source=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();source.buffer=noiseBuffer;source.loop=true;
+  filter.type='bandpass';filter.Q.value=.45;gain.gain.value=0;source.connect(filter);filter.connect(gain);gain.connect(output.pan);
+  ob.foamVoice=registerVoice(source,output,[filter,gain]);ob.foamAudio={source,filter,gain,pan:output.pan};source.start();
+ }
+ const {source,filter,gain,pan}=ob.foamAudio,time=ac.currentTime;
+ source.playbackRate.setTargetAtTime(slow?.62:1,time,.05);
+ filter.frequency.setTargetAtTime(2200+ob.pressure*3000,time,.05);gain.gain.setTargetAtTime(Math.min(.16,intensity*.22),time,.035);
+ pan.pan.setTargetAtTime(THREE.MathUtils.clamp((ob.body.position.x-camera.position.x)/(3+Math.abs(camera.position.z-ob.body.position.z)*.18),-.92,.92),time,.06);
+}
 function stopAudioVoices(){for(const voice of [...audioVoices])voice.cleanup();pendingTinkles.clear();}
 document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden){stopAudioVoices();ac.suspend().catch(()=>{});}else if(started)ac.resume().catch(()=>{});});
