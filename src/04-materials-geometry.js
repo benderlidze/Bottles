@@ -1,9 +1,9 @@
 'use strict';
 const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.name==='JAMESON'?0x93c59a:0xffffff,roughness:.075,transmission:1,thickness:.085,ior:1.52,opacity:1,clearcoat:.18,clearcoatRoughness:.08,envMapIntensity:1.15,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.55}));
-const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:new THREE.Color(b.glass).lerp(new THREE.Color(0xffffff),.28),metalness:0,roughness:.085,ior:1.52,clearcoat:.35,transparent:true,opacity:.58,side:THREE.DoubleSide,forceSinglePass:true,envMapIntensity:1.6,depthWrite:false}));
+const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.075,transmission:.94,thickness:.018,ior:1.52,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.45,opacity:1,side:THREE.FrontSide,envMapIntensity:.85}));
 const geometries=[];let bottles=[],planks=[],debris=[],balls=[],puddles=[],ripples=[],breakQueue=new Map(),broken=0,shots=0,started=false,slow=false,shake=0,simTime=0,resetAt=0;
-const N=8,R=4,TAU=Math.PI*2;let gameMode='challenge';
-function countBroken(ob){if(ob.counted)return;ob.counted=true;broken++;scoreBreak(ob);refreshRoundHUD();}
+const N=8,R=4,TAU=Math.PI*2;let gameMode='pyramid';
+function countBroken(ob){if(ob.counted)return;ob.counted=true;broken++;refreshRoundHUD();}
 const bottleProfiles=[
 [[0,.90],[.018,.98],[.05,1],[.57,1],[.615,.99],[.65,.95],[.69,.78],[.735,.48],[.765,.32],[.84,.31],[.86,.34],[.88,.31],[.98,.31],[1,.32]],
 [[0,.89],[.022,.98],[.065,1],[.57,1],[.62,.98],[.655,.91],[.70,.70],[.75,.45],[.79,.31],[.83,.31],[.845,.36],[.875,.36],[.9,.31],[1,.31]],
@@ -27,7 +27,7 @@ for(let y=-b.h/2+.09;y<b.h/2-.05;y+=b.h/12)for(let x=-b.w*.44;x<b.w*.45;x+=b.w/6
 // Shape-level collision groups. Bottles touch each other and planks only through 4 cheap row proxies,
 // while the 32 breakable patches collide with the table, balls, base boxes and debris.
 const SG={DEF:1,PATCH:16,PROXY:32,DEBRIS:64,PLANK:256,BASE:512};
-const SG_MASK={[SG.PATCH]:~(SG.PATCH|SG.PROXY|SG.PLANK|SG.BASE),[SG.PROXY]:SG.PROXY|SG.PLANK|SG.BASE,[SG.DEBRIS]:SG.DEF|SG.PATCH|SG.PLANK|SG.BASE,[SG.PLANK]:~SG.PATCH,[SG.BASE]:~SG.PATCH};
+const SG_MASK={[SG.PATCH]:~(SG.PATCH|SG.PROXY|SG.PLANK|SG.BASE),[SG.PROXY]:SG.PROXY|SG.PLANK|SG.BASE|SG.PATCH,[SG.DEBRIS]:SG.DEF|SG.PATCH|SG.PLANK|SG.BASE,[SG.PLANK]:~SG.PATCH,[SG.BASE]:~SG.PATCH};
 function setShapeGroup(shape,g){shape.collisionFilterGroup=g;shape.collisionFilterMask=SG_MASK[g]??-1;return shape;}
 // Octagonal prism (or frustum when taper) around the bottle axis for one row. Prisms pass their 5 unique axes so SAT stays cheap.
 function proxyShape(b,y0,y1,taper){const M=8,unit=[],ref=y0+(y1-y0)*.5,fr=radiusAt(b,ref);for(let k=0;k<M;k++){const p=surfPoint(b,(k+.5)*TAU/M-Math.PI,ref);unit.push([p.x/fr,p.z/fr]);}
@@ -38,13 +38,13 @@ for(const f of faces){const a=verts[f[0]],n=verts[f[1]].vsub(a).cross(verts[f[2]
 let axes;if(!taper){axes=[new CANNON.Vec3(0,1,0)];for(let k=0;k<M/2;k++){const a=verts[k],c=verts[(k+1)%M],n=new CANNON.Vec3(c.z-a.z,0,a.x-c.x);n.normalize();axes.push(n);}}
 return {shape:setShapeGroup(new CANNON.ConvexPolyhedron({vertices:verts,faces,axes}),SG.PROXY),offset:new CANNON.Vec3(0,cy,0)};}
 // Drop the proxy of a row once half of its glass is gone, so other bottles can fall into the broken section.
-function refreshProxies(ob){for(let row=0;row<R;row++){if(!ob.proxies[row])continue;const inRow=ob.parts.filter(p=>p.row===row);if(inRow.filter(p=>p.attached).length*2<=inRow.length){ob.body.removeShape(ob.proxies[row]);ob.proxies[row]=null;}}}
+function refreshProxies(ob){for(let row=0;row<R;row++){if(!ob.proxies[row])continue;const inRow=ob.parts.filter(p=>p.row===row);if(inRow.some(p=>!p.attached)){ob.body.removeShape(ob.proxies[row]);ob.proxies[row]=null;for(const part of inRow)if(part.attached)part.shape.collisionFilterMask=SG.DEF|SG.PLANK|SG.BASE|SG.PROXY|SG.DEBRIS;}}}
 function pushAll(dst,src){for(let i=0;i<src.length;i++)dst.push(src[i]);}
 // Bake meshes (with their local transforms) into one non-indexed geometry: one draw call instead of many.
 function mergeMeshes(meshes){const pos=[],nor=[],uv=[];for(const m of meshes){m.updateMatrix();const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();g.applyMatrix4(m.matrix);if(!g.attributes.normal)g.computeVertexNormals();pushAll(pos,g.attributes.position.array);pushAll(nor,g.attributes.normal.array);if(g.attributes.uv)pushAll(uv,g.attributes.uv.array);else for(let i=0;i<g.attributes.position.count;i++)uv.push(0,0);g.dispose();}
 const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));out.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));out.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));return out;}
 // Settled debris is baked into a few big static buffers (one draw call per material) and its physics body is removed.
-const edgeMat=new THREE.LineBasicMaterial({color:0xcce0d3,transparent:true,opacity:.25});
+const edgeMat=new THREE.LineBasicMaterial({color:0xcce0d3,transparent:true,opacity:.12});
 let staticBatches=new Map(),staticObjects=[];
 function batchFor(material,isLine,need){let list=staticBatches.get(material);if(!list)staticBatches.set(material,list=[]);let batch=list.at(-1);if(!batch||batch.used+need>batch.max){if(list.length>=2){const oldest=list.shift();scene.remove(oldest.mesh);oldest.mesh.geometry.dispose();}const max=Math.max(need,isLine?32768:49152),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(max*3),3).setUsage(THREE.DynamicDrawUsage));if(!isLine){g.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(max*3),3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(max*2),2).setUsage(THREE.DynamicDrawUsage));}g.setDrawRange(0,0);const mesh=isLine?new THREE.LineSegments(g,material):new THREE.Mesh(g,material);mesh.frustumCulled=false;mesh.renderOrder=material===edgeMat?0:1;scene.add(mesh);batch={mesh,used:0,max};list.push(batch);}return batch;}
 const _nm=new THREE.Matrix3(),_v=new THREE.Vector3();

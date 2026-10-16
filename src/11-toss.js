@@ -7,7 +7,6 @@ const baseToast=showToast;let tossSpeaking=false;showToast=text=>{if(gameMode!==
 function tossSay(text,ms=2100){tossSpeaking=true;showToast(text);tossSpeaking=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),ms);}
 let toss=null,tossCount=0,tossHits=0,tossStreak=0,tossBest=0,tossNextAt=0,tossOverShown=false;
 function tossHud(){$('broken').innerHTML=String(tossHits).padStart(2,'0')+`<span style="display:inline;font-size:14px"> / ${String(tossCount).padStart(2,'0')}</span>`;$('broken').nextElementSibling.textContent='ПОПАДАНИЯ';}
-function pyramidHud(){$('broken').innerHTML=String(broken).padStart(2,'0')+'<span style="display:inline;font-size:14px"> / 15</span>';$('broken').nextElementSibling.textContent='DAMAGED';}
 function startTossRound(){toss=null;tossCount=tossHits=tossStreak=tossBest=0;tossOverShown=false;tossNextAt=simTime+1.2;tossHud();tossSay('Попадите до приземления. Цельтесь с упреждением!',3000);}
 function removeBottle(ob){const i=bottles.indexOf(ob);if(i<0)return;clearObject(ob.group);for(const part of ob.parts)if(part.attached){part.geo.dispose();part.label?.geometry.dispose();}for(const h of ob.holes)clearObject(h.stream);world.removeBody(ob.body);breakQueue.delete(ob);bottles.splice(i,1);}
 function launchToss(){const side=Math.random()<.5?-1:1,idx=(Math.random()*brands.length)|0,x0=side*rnd(6,7.5),ob=addBottle(x0,.4,idx),level=tossCount/TOSS_ROUND;
@@ -21,5 +20,7 @@ function resolveToss(t){t.done=true;if(t.hit){tossHits++;tossStreak++;tossBest=M
 function updateToss(){if(gameMode!=='toss'||!started)return;if(toss&&!toss.done){const p=toss.ob.body.position;if(p.y<-2||Math.abs(p.x)>14||simTime-toss.start>8)resolveToss(toss);return;}if(simTime<tossNextAt)return;
 if(tossCount<TOSS_ROUND){launchToss();return;}if(!tossOverShown){tossOverShown=true;tossSay(`Итог: ${tossHits} / ${TOSS_ROUND} · серия ${tossBest} · R — ещё раз`,7000);}}
 // Updated by the shared game loop; no extra animation-frame callback.
-function toggleMode(){selectMode(gameMode==='toss'?String(levelIndex):'toss');}
+function toggleMode(){selectMode(gameMode==='toss'?'pyramid':'toss');}
 $('mode').onclick=toggleMode;document.addEventListener('keydown',e=>{if(!e.target.closest('input,select,textarea,[contenteditable=true]')&&e.key.toLowerCase()==='t')toggleMode();});
+
+function selectMode(value){charging=false;$('charge').style.width='0';gameMode=value==='toss'?'toss':'pyramid';$('mode').textContent=gameMode==='toss'?'Пирамида':'В воздух';focus.set(0,5.1,0);zoom=1;resize();rebuild();refreshRoundHUD();shadowFrames=3;}

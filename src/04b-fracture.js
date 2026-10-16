@@ -2,7 +2,7 @@
 // Pre-fractured glass. Each bottle surface is a jittered grid (zigzag diagonals); at build time every bottle gets its own
 // noisy, weighted Voronoi crack map over that grid. Cells become breakable pieces with jagged torn edges, so a hit only
 // has to hide cells and spawn them as fragments - no cutting at runtime.
-const FR={A:40,cell:.062,thick:.015,seeds:[26,34],minTris:10};
+const FR={A:40,cell:.062,thick:.015,seeds:[68,86],minTris:5};
 const fractureTemplates=new Map();
 // Grid shared by all bottles of one brand: vertex positions/normals, triangles (ccw = outward), edge -> triangles.
 function fractureTemplate(b){let T=fractureTemplates.get(b);if(T)return T;
@@ -21,7 +21,7 @@ T={A,Y,va,vy,dA:TAU/A,dY:(yT-yB)/Y,outer,inner,nrm,tris,edgeTris,key,triC,triP,r
 function clipRect(poly,x0,x1,y0,y1){for(const [axis,lim,keepGreater]of [[0,x0,true],[0,x1,false],[1,y0,true],[1,y1,false]]){const out=[];for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length],ip=keepGreater?p[axis]>=lim:p[axis]<=lim,iq=keepGreater?q[axis]>=lim:q[axis]<=lim;if(ip)out.push(p);if(ip!==iq){const t=(lim-p[axis])/(q[axis]-p[axis]);out.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t]);}}poly=out;if(!poly.length)break;}return poly;}
 
 function fractureBottle(b,idx){const T=fractureTemplate(b),nT=T.tris.length,seeds=[],want=Math.round(rnd(FR.seeds[0],FR.seeds[1]));
-for(let tries=0;seeds.length<want&&tries<want*40;tries++){const p=T.triC[(Math.random()*nT)|0];if(seeds.some(s=>s.p.distanceTo(p)<.17))continue;seeds.push({p,w:rnd(.88,1.14),ph:[rnd(0,TAU),rnd(0,TAU),rnd(0,TAU)]});}
+for(let tries=0;seeds.length<want&&tries<want*40;tries++){const p=T.triC[(Math.random()*nT)|0];if(seeds.some(s=>s.p.distanceTo(p)<.095))continue;seeds.push({p,w:rnd(.7,1.35),ph:[rnd(0,TAU),rnd(0,TAU),rnd(0,TAU)]});}
 // slightly noisy, slightly weighted Voronoi: mostly straight crack lines between junctions, shards of varied size
 const cell=new Int32Array(nT);for(let t=0;t<nT;t++){const c=T.triC[t];let best=1e9,bi=0;for(let s=0;s<seeds.length;s++){const S=seeds[s],d=(c.distanceTo(S.p)+.018*(Math.sin(c.x*9+S.ph[0])+Math.sin(c.y*11+S.ph[1])+Math.sin(c.z*10+S.ph[2])))/S.w;if(d<best){best=d;bi=s;}}cell[t]=bi;}
 const nb=t=>{const tr=T.tris[t],out=[];for(let e=0;e<3;e++)for(const o of T.edgeTris.get(T.key(tr[e],tr[(e+1)%3])))if(o!==t)out.push(o);return out;};
@@ -61,4 +61,5 @@ const shape=setShapeGroup(new CANNON.Box(new CANNON.Vec3(half[0],half[1],half[2]
 // spill points for the liquid: a sample of the piece outline
 const outline=rimSegs.map(s=>s.i[0]),step=Math.max(1,Math.ceil(outline.length/16)),corners=outline.filter((_,i)=>i%step===0);
 let row=0;while(row<R-1&&center.y>ys[row+1])row++;const ang=Math.atan2(center.x,center.z),k=((Math.floor(ang/(TAU/N))+4)%N+N)%N;
-return {geo,label,shape,shapeOffset:new CANNON.Vec3(center.x,center.y,center.z),shapeQuat:new CANNON.Quaternion(q.x,q.y,q.z,q.w),center,hull,y0,y1,row,k,neighbors:[...neighbors],touchesBottom,touchesTop,rimSegs,corners};});}
+let area=0;for(const t of tris){const tr=T.tris[t];area+=new THREE.Vector3().subVectors(outer[tr[1]],outer[tr[0]]).cross(new THREE.Vector3().subVectors(outer[tr[2]],outer[tr[0]])).length()*.5;}
+return {area,geo,label,shape,shapeOffset:new CANNON.Vec3(center.x,center.y,center.z),shapeQuat:new CANNON.Quaternion(q.x,q.y,q.z,q.w),center,hull,y0,y1,row,k,neighbors:[...neighbors],touchesBottom,touchesTop,rimSegs,corners};});}
