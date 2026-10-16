@@ -1,61 +1,47 @@
-const assert = require('node:assert/strict');
-const fs = require('node:fs/promises');
-const {createServer} = require('./serve.cjs');
-const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright-core');
-(async () => {
-  const server = createServer();
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  let browser;
-  try {
-    browser = await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,args:['--enable-webgl','--ignore-gpu-blocklist']});
-    const page = await browser.newPage({viewport:{width:1440,height:1000}});
-    const errors = []; page.on('pageerror', error => errors.push(error.message));
-    await page.addInitScript(() => { let seed=4973;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}; });
-    await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.locator('#start').click();
-    assert.equal(await page.evaluate(()=>started), true);
-    const layouts = await page.evaluate(()=>{
-      const result=[];
-      for(let i=0;i<LEVELS.length;i++){selectMode(String(i));bottleLab.advance(.5);result.push({count:bottles.length,damage:broken,finite:bottles.every(b=>Number.isFinite(b.body.mass)&&b.body.mass>0)});}
-      return result;
-    });
-    assert.deepEqual(layouts.map(l=>l.count),[5,10,9,5,5]);
-    assert.ok(layouts.every(l=>l.damage===0&&l.finite));
-    const origins = await page.evaluate(()=>{
-      selectMode('0');const result=[];
-      for(const z of [1,1.7,2.6]){zoom=z;resize();const p=shotPath(40).origin.project(camera);result.push([p.x,p.y]);}zoom=1;resize();return result;
-    });
-    assert.ok(origins.every(([x,y])=>Math.abs(x)<1e-6&&Math.abs(y+.84)<1e-6));
-    const win = await page.evaluate(()=>{
-      selectMode('0');for(let i=0;i<4;i++){bottleLab.throwAt(i,65);bottleLab.advance(1);}bottleLab.advance(3);
-      return {status:round.status,progress:levelProgress(),saved:JSON.parse(localStorage.getItem('last-call-best-v1'))[0]};
-    });
-    assert.equal(win.status,'won');assert.ok(win.progress>=4&&win.saved.score>0);
-    assert.equal(await page.locator('#result').isVisible(),true);
-    await page.locator('#nextLevel').click();assert.equal(await page.evaluate(()=>levelIndex),1);
-    const guard = await page.evaluate(()=>{selectMode('3');bottleLab.throwAt(2,55);bottleLab.advance(2);return round.status;});
-    assert.equal(guard,'lost');
-    const ammo = await page.evaluate(()=>{selectMode('0');for(let i=0;i<9;i++)bottleLab.aimAndThrow(.98,.98,25);const used=shots;bottleLab.advance(9);return {used,status:round.status};});
-    assert.deepEqual(ammo,{used:6,status:'lost'});
-    const tossHit = await page.evaluate(()=>{selectMode('toss');launchToss();const ob=toss.ob;ob.body.position.set(0,4,0);ob.body.velocity.set(0,0,0);const body=new CANNON.Body({mass:.28});body.ball=true;body.velocity.set(0,0,-35);ballStrike(ob,{body},new THREE.Vector3(0,0,brands[ob.idx].depth/2));return {hits:tossHits,done:toss.done};});
-    assert.deepEqual(tossHit,{hits:1,done:true});
-    const resources = await page.evaluate(()=>{
-      let min=Infinity,max=0;
-      for(let i=0;i<5;i++){selectMode('0');bottleLab.inspectHit(0,80);bottleLab.advance(.5);rebuild();renderer.render(scene,camera);min=Math.min(min,renderer.info.memory.geometries);max=Math.max(max,renderer.info.memory.geometries);}
-      for(let i=0;i<80;i++)playSample('light0',0);return {growth:max-min,balls:balls.length,debris:debris.length,voices:audioVoices.size,maxVoices:MAX_AUDIO_VOICES};
-    });
-    assert.ok(resources.growth<=8,JSON.stringify(resources));assert.equal(resources.balls,0);assert.equal(resources.debris,0);assert.ok(resources.voices<=resources.maxVoices);
-    await fs.mkdir('artifacts',{recursive:true});
-    await page.screenshot({path:'artifacts/desktop.png'});
-    await page.setViewportSize({width:390,height:844});
-    await page.mouse.move(190,440);await page.mouse.down();
-    await page.waitForFunction(()=>trajectory.visible);
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-    const launcherClear = await page.evaluate(()=>{const p=shotPath(35).origin.project(camera),x=(p.x+1)*innerWidth/2,y=(1-p.y)*innerHeight/2;return document.elementFromPoint(x,y)===renderer.domElement;});
-    assert.equal(launcherClear,true,'HUD must not cover the launch point');
-    await page.screenshot({path:'artifacts/mobile.png'});await page.mouse.up();
-    assert.deepEqual(errors,[]);
-    console.log('PASS: layouts, stable physics, launch origin/zoom, actual hits, victory/save/next, guard loss, ammo loss, toss sweep, resource cleanup, audio cap, mobile aiming.');
-    console.log(JSON.stringify({layouts,resources},null,2));
-  } finally {if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
-})().catch(error=>{console.error(error);process.exitCode=1;});
+const assert=require('node:assert/strict'),fs=require('node:fs/promises');
+const {createServer}=require('./serve.cjs');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright-core');
+(async()=>{
+ const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
+ try{
+  browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,args:['--enable-webgl','--ignore-gpu-blocklist']});
+  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('#start').click();
+  assert.equal(await page.locator('#levelSelect').count(),0);
+  assert.deepEqual(await page.evaluate(()=>({mode:gameMode,count:bottles.length})),{mode:'pyramid',count:15});
+  await page.evaluate(()=>{
+   window.singleBottle=()=>{selectMode('toss');gameMode='pyramid';let seed=281;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};const ob=addBottle(0,0,0);focus.set(0,1.1,0);zoom=2.2;resize();return ob;};
+  });
+  const fracture=await page.evaluate(()=>{
+   const result=[];
+   for(const energy of [1,8,30,65,120]){const ob=singleBottle();ob.fluid=0;syncBottleMass(ob,true);const mass=ob.body.mass;bottleLab.inspectHit(0,energy);const momentum=ob.body.velocity.scale(ob.body.mass);for(const d of debris)momentum.vadd(d.body.velocity.scale(d.body.mass),momentum);
+    const angular=new CANNON.Vec3();let kinetic=0;
+    for(const body of [ob.body,...debris.map(d=>d.body)]){const local=body.quaternion.conjugate().vmult(body.angularVelocity),L=body.quaternion.vmult(new CANNON.Vec3(local.x*body.inertia.x,local.y*body.inertia.y,local.z*body.inertia.z));angular.vadd(L,angular);angular.vadd(body.position.vsub(ob.body.position).cross(body.velocity.scale(body.mass)),angular);kinetic+=.5*body.mass*body.velocity.lengthSquared()+.5*L.dot(body.angularVelocity);}
+    result.push({energy,removed:ob.parts.length-ob.attachedCount,fragments:debris.length,brokenBonds:ob.bonds.filter(b=>!b.health).length,massError:Math.abs(ob.body.mass+debris.reduce((s,d)=>s+d.body.mass,0)-mass),momentumError:momentum.length(),angularError:angular.length(),scatterEnergy:kinetic});
+   }return result;
+  });
+  assert.equal(fracture[0].removed,0);assert.equal(fracture[0].brokenBonds,0);
+  assert.ok(fracture[2].removed>0);assert.ok(fracture[4].removed>fracture[3].removed&&fracture[3].removed>fracture[2].removed);
+  assert.ok(fracture.every(r=>r.massError<1e-8&&r.momentumError<1e-8),JSON.stringify(fracture));
+  assert.ok(fracture.every(r=>r.angularError<1e-7&&r.scatterEnergy<=Math.min(r.energy*.06,2.4)+1e-7),JSON.stringify(fracture));
+  const shots=await page.evaluate(()=>{
+   const out=[];for(const power of [8,35,65,100]){const ob=singleBottle();bottleLab.throwAt(0,power);bottleLab.advance(1.2);out.push({power,damage:ob.damage,removed:ob.parts.length-ob.attachedCount,finite:world.bodies.every(b=>Number.isFinite(b.velocity.length()))});}return out;
+  });
+  assert.ok(shots.every(s=>s.finite));assert.equal(shots[0].removed,0);assert.ok(shots[2].removed>shots[1].removed&&shots[3].removed>=shots[2].removed,JSON.stringify(shots));
+  const origins=await page.evaluate(()=>{singleBottle();const result=[];for(const z of [1,1.7,2.6]){zoom=z;resize();const p=shotPath(50).origin.project(camera);result.push([p.x,p.y]);}return result;});
+  assert.ok(origins.every(([x,y])=>Math.abs(x)<1e-6&&Math.abs(y+.84)<1e-6));
+  const cleanup=await page.evaluate(()=>{
+   let min=Infinity,max=0;for(let i=0;i<3;i++){singleBottle();bottleLab.inspectHit(0,100);bottleLab.advance(1);singleBottle();renderer.render(scene,camera);min=Math.min(min,renderer.info.memory.geometries);max=Math.max(max,renderer.info.memory.geometries);}return {growth:max-min,fragments:debris.length,secondary:secondaryBreaks.size};
+  });
+  assert.ok(cleanup.growth<=4,JSON.stringify(cleanup));assert.equal(cleanup.fragments,0);assert.equal(cleanup.secondary,0);
+  const audio=await page.evaluate(()=>{for(let i=0;i<100;i++){playSample('light0',0);resonantTone(0,1200,.1,.02);}const count=audioVoices.size;stopAudioVoices();muted=true;playSample('shatter',0);const mutedVoices=audioVoices.size;muted=false;return {count,limit:MAX_AUDIO_VOICES,mutedVoices,samples:Object.keys(soundBuffers).length};});
+  assert.ok(audio.count<=audio.limit&&audio.samples===7);assert.equal(audio.mutedVoices,0);
+  await page.evaluate(()=>{selectMode('toss');launchToss();const ob=toss.ob;ob.body.position.set(0,4,0);ob.body.velocity.set(0,0,0);const ball=new CANNON.Body({mass:.28});ball.ball=true;ball.velocity.set(0,0,-30);ballStrike(ob,{body:ball},new THREE.Vector3(0,0,brands[ob.idx].depth/2));});
+  assert.equal(await page.evaluate(()=>tossHits),1);
+  await page.evaluate(()=>{singleBottle();bottleLab.throwAt(0,65);bottleLab.advance(.45);slow=true;});
+  await fs.mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/fracture.png'});
+  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>selectMode('pyramid'));await page.mouse.move(190,440);await page.mouse.down();await page.waitForFunction(()=>trajectory.visible);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'artifacts/mobile.png'});await page.mouse.up();
+  assert.deepEqual(errors,[]);console.log('PASS: free sandbox, bond fracture, glass mass, fragment momentum, impact energy, real projectiles, reset cleanup, sound polyphony/mute, toss and mobile aiming.');console.log(JSON.stringify({fracture,shots,cleanup,audio},null,2));
+ }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
+})().catch(e=>{console.error(e);process.exitCode=1;});
