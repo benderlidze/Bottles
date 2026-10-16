@@ -22,4 +22,4 @@ function updateToss(){if(gameMode!=='toss'||!started)return;if(toss&&!toss.done)
 if(tossCount<TOSS_ROUND){launchToss();return;}if(!tossOverShown){tossOverShown=true;tossSay(`Итог: ${tossHits} / ${TOSS_ROUND} · серия ${tossBest} · R — ещё раз`,7000);}}
 // Updated by the shared game loop; no extra animation-frame callback.
 function toggleMode(){selectMode(gameMode==='toss'?String(levelIndex):'toss');}
-$('mode').onclick=toggleMode;document.addEventListener('keydown',e=>{if(!e.target.closest('input,select,button')&&e.key.toLowerCase()==='t')toggleMode();});
+$('mode').onclick=toggleMode;document.addEventListener('keydown',e=>{if(!e.target.closest('input,select,textarea,[contenteditable=true]')&&e.key.toLowerCase()==='t')toggleMode();});

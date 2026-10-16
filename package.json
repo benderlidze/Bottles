@@ -1,0 +1,11 @@
+{
+  "name": "last-call-bottles",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "check": "node scripts/check.cjs",
+    "test": "node scripts/smoke.cjs"
+  },
+  "devDependencies": { "playwright-core": "1.62.1" }
+}
