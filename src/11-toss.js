@@ -21,10 +21,11 @@ function updateToss(){if(gameMode!=='toss'||!started)return;if(toss&&!toss.done)
 if(tossCount<TOSS_ROUND){launchToss();return;}if(!tossOverShown){tossOverShown=true;tossSay(`Result: ${tossHits} / ${TOSS_ROUND} · best streak ${tossBest} · R to play again`,7000);}}
 // Updated by the shared game loop; no extra animation-frame callback.
 // Modes cycle: pyramid -> toss -> giant -> pyramid.
-const MODES=['pyramid','toss','giant'],MODE_NAMES={pyramid:'Pyramid',toss:'Toss',giant:'Giant'};
+const MODES=['pyramid','toss','giant'];
 function toggleMode(){selectMode(MODES[(MODES.indexOf(gameMode)+1)%MODES.length]);}
-$('mode').onclick=toggleMode;document.addEventListener('keydown',e=>{if(!e.target.closest('input,select,textarea,[contenteditable=true]')&&e.key.toLowerCase()==='t')toggleMode();});
+document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{if(gameMode!==button.dataset.mode)selectMode(button.dataset.mode);}));
+document.addEventListener('keydown',e=>{if(!e.target.closest('input,select,textarea,[contenteditable=true]')&&e.key.toLowerCase()==='t')toggleMode();});
 
 // The giant bottle is shown closer, centred on its middle.
 const viewFocusY=()=>gameMode==='giant'?2.9:5.1;
-function selectMode(value){charging=false;$('charge').style.width='0';gameMode=MODES.includes(value)?value:'pyramid';$('mode').textContent='Mode: '+MODE_NAMES[gameMode];focus.set(0,viewFocusY(),0);zoom=gameMode==='giant'?1.5:1;resize();rebuild();refreshRoundHUD();shadowFrames=3;}
+function selectMode(value){charging=false;trajectory.visible=false;$('charge').style.width='0';gameMode=MODES.includes(value)?value:'pyramid';document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===gameMode)));focus.set(0,viewFocusY(),0);zoom=gameMode==='giant'?1.5:1;resize();rebuild();refreshRoundHUD();shadowFrames=3;}

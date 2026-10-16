@@ -8,17 +8,20 @@
 <body>
 <div id="stage"></div>
 <div class="hud top">
- <div><div class="eyebrow">FRAGILE BALANCE</div><h1 class="title">LAST CALL</h1><div class="sub">One throw. Chain reaction.</div></div>
- <div class="stats"><div class="stat"><strong id="broken">00 / 15</strong><span>DAMAGED</span></div><div class="stat"><strong id="shots">00</strong><span>THROWS</span></div></div>
+ <div class="stat" aria-label="Score"><strong id="broken">00 / 15</strong><span>DAMAGED</span></div>
+ <div class="sound"><button id="sound" aria-label="Toggle sound" aria-pressed="true">SOUND ON</button><input id="volume" aria-label="Volume" type="range" min="0" max="1" step=".01" value=".55"></div>
 </div>
 <div id="cross" class="cross"><b></b></div><div id="toast" class="toast" role="status"></div>
-<div class="hud sound"><button id="sound" aria-label="Toggle sound">SOUND ON</button><input id="volume" aria-label="Volume" type="range" min="0" max="1" step=".01" value=".55"></div>
 <div class="hud bottom">
- <div class="tip">Aim and throw · Hold for power and trajectory · Wheel to zoom · R to restart · T to switch mode</div>
- <div class="controls"><div class="power"><div class="row"><label for="power">THROW POWER</label><span id="powerLabel">50%</span></div><input id="power" aria-label="Throw power" type="range" min="5" max="100" value="50"></div><div class="launch-label">LAUNCH POINT</div><div class="actions"><button id="slow" title="Space — slow motion">0.25×</button><button id="mode">Mode: Pyramid</button><button id="reset" title="R — start over">Restart ↻</button></div></div>
+ <div class="modes" role="group" aria-label="Game mode">
+  <button data-mode="pyramid" aria-pressed="true" title="Smash a pyramid of bottles">Pyramid</button>
+  <button data-mode="toss" aria-pressed="false" title="Hit flying bottles before they land">Flying bottles</button>
+  <button data-mode="giant" aria-pressed="false" title="Break one giant bottle at a time">Giant bottle</button>
+ </div>
+ <div class="controls"><div class="power"><div class="row"><label for="power">POWER</label><span id="powerLabel">50%</span></div><input id="power" aria-label="Throw power" type="range" min="5" max="100" value="50"></div><div class="actions"><button id="slow" aria-pressed="false" title="Space — slow motion">0.25×</button><button id="reset" title="R — start over">Restart ↻</button></div></div>
 </div>
 <div id="charge" class="charge"></div>
-<div class="veil" id="intro"><div class="eyebrow">A LITTLE DESTRUCTION THERAPY</div><h1>LAST CALL</h1><p>Glass. Impact. Shards.<br>A free-play bottle sandbox — no goals, no limits.</p><button id="start" disabled>PREPARING GLASS…</button><small>The ball starts at the bottom centre. Hold to preview the throw.</small><div id="error"></div></div>
+<div class="veil" id="intro"><div class="eyebrow">A LITTLE DESTRUCTION THERAPY</div><h1>LAST CALL</h1><p>Glass. Impact. Shards.<br>A free-play bottle sandbox — no goals, no limits.</p><button id="start" disabled>PREPARING GLASS…</button><small>Aim and release to throw. Hold for power and trajectory. Scroll to zoom.</small><div id="error"></div></div>
 <script>window.addEventListener('error',e=>{const el=document.getElementById('error');el.style.display='block';el.textContent='Scene error: '+e.message;});</script>
 <script src="lib/three.js"></script><script src="lib/cannon.js"></script>
 <script src="src/01-scene.js"></script><script src="src/02-brands.js"></script><script src="src/03-labels.js"></script><script src="src/04-materials-geometry.js"></script><script src="src/04b-fracture.js"></script><script src="src/04c-bonds.js"></script><script src="src/04d-giant.js"></script><script src="src/05-bottle.js"></script><script src="src/06-drops-damage.js"></script><script src="src/06b-impact.js"></script><script src="src/07-fluid.js"></script><script src="src/07b-champagne.js"></script><script src="src/08-rebuild-perforate.js"></script><script src="src/audio-data.js"></script><script src="src/09-audio.js"></script><script src="src/10-game.js"></script><script src="src/11-toss.js"></script><script src="src/12-giant.js"></script>
