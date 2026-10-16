@@ -10,13 +10,16 @@ else if(b.name==='JAMESON'){x.fillStyle='#e7ddbc';x.fillRect(0,0,W,H);border('#6
 else if(b.name.includes('Maker')){x.fillStyle='#eee0b4';x.fillRect(0,0,W,H);for(let k=0;k<13000;k++){x.fillStyle=`rgba(103,77,32,${Math.random()*.07})`;x.fillRect(Math.random()*W,Math.random()*H,1.5,1.5);}text('Maker’s',290,207,'Georgia','#302315','bold');text('Mark',516,238,'Georgia','#302315','bold');seal(740,100,'#e9d9a5','#4b3520','S IV');text('KENTUCKY STRAIGHT',948,45,'Georgia','#302315','bold');text('BOURBON WHISKY',1050,75,'Georgia','#302315','bold');text('HANDMADE',1148,41,'Arial','#302315','bold');line(1210,'#5d4326');text('70 cl.                   45% Vol.',1332,40,'Georgia','#302315');}
 else if(b.name.includes('JOHNNIE')){x.clearRect(0,0,W,H);x.save();x.translate(512,700);x.rotate(-.26);x.fillStyle='#92251c';x.fillRect(-640,-270,1280,540);x.strokeStyle='#eacb7c';x.lineWidth=14;x.strokeRect(-625,-255,1250,510);x.lineWidth=3;x.strokeRect(-608,-237,1216,474);x.textAlign='center';x.fillStyle='#ffe2a0';x.font='bold 58px Georgia';x.fillText('JOHNNIE WALKER',0,-140,980);x.font='bold 162px Georgia';x.fillText('Red Label',0,62,1100);x.font='38px Georgia';x.fillText('BLENDED SCOTCH WHISKY',0,166,960);x.restore();}
 
-else if(b.name==='MOËT & CHANDON'){
- x.fillStyle='#e7d9af';x.fillRect(0,0,W,H);border('#a48b4c',22,7);border('#302b21',44,2);
- text('CHAMPAGNE',205,96,'Georgia','#353124');
- x.strokeStyle='#88713d';x.lineWidth=6;x.beginPath();x.moveTo(432,348);x.lineTo(445,278);x.lineTo(480,315);x.lineTo(512,258);x.lineTo(546,315);x.lineTo(580,278);x.lineTo(592,348);x.closePath();x.stroke();
- text('MOËT & CHANDON',650,210,'Georgia','#29271f','bold');line(727,'#a48b4c');
- text('IMPÉRIAL',970,170,'Georgia','#29271f');text('BRUT',1140,96,'Georgia','#29271f');
- text('ÉPERNAY · FRANCE',1310,44,'Georgia','#51432a');
+else if(b.name==='J. LASSALLE'){
+ // One atlas: the lower body label above, the neck band below.
+ x.fillStyle='#171a13';x.fillRect(0,0,W,H);x.strokeStyle='#ded7b9';x.lineWidth=5;x.strokeRect(42,30,940,940);x.lineWidth=1.5;x.strokeRect(55,43,914,914);
+ seal(187,94,'#262b1b','#c7bd8f','JL');
+ text('CHAMPAGNE',342,69,'Georgia','#ece7cc');text('J. LASSALLE',520,160,'Georgia','#f5efda');
+ text('CHIGNY-LES-ROSES',625,47,'Georgia','#e6dfc0');line(685,'#bcb28a',130,894);
+ text('PRÉFÉRENCE',787,73,'Georgia','#f2e9cb','bold');text('BRUT · PREMIER CRU',873,43,'Georgia','#ded5b4');text('750 ml                       12% Vol.',937,30,'Arial','#d2c8aa');
+ x.strokeStyle='#d9d2b4';x.lineWidth=4;for(const y of [1015,1385]){x.beginPath();x.moveTo(0,y);x.lineTo(W,y);x.stroke();}
+ seal(1200,152,'#1a2014','#cbbf8e','JL');text('CHAMPAGNE',1086,40,'Georgia','#e5dec1');
+ text('J. LASSALLE',1345,44,'Georgia','#e5dec1');
 }
 else if(b.name==='BACARDÍ'){
  x.fillStyle='#f4eddc';x.fillRect(0,0,W,H);border('#a4987a',24,5);border('#a4987a',43,1);

@@ -16,7 +16,7 @@ node scripts/serve.cjs
 
 В коллекции 12 бутылок. К Jack Daniel’s, Jim Beam, Jameson, Maker’s Mark, Johnnie Walker и Absolut добавлены ровно шесть:
 
-- Moët & Chandon Brut Impérial — широкая бутылка шампанского с длинной золотистой фольгой.
+- J. Lassalle Préférence — вытянутая зелёная бутылка по фотографии пользователя: плавные плечи, длинная золотистая фольга и чёрные этикетки на корпусе и горлышке.
 - Bacardí Carta Blanca — прозрачный цилиндрический корпус и длинное горлышко.
 - Bombay Sapphire — голубое стекло, прямоугольный корпус и короткое круглое горлышко.
 - Jägermeister — широкий плоский корпус из тёмно-зелёного стекла.
@@ -27,7 +27,7 @@ Jameson стал более вытянутым; у Jack Daniel’s уточне�
 
 Все 12 видов присутствуют в исходной пирамиде из 15 бутылок и доступны в подбрасывании. Число бутылок в сцене и лимиты осколков не увеличены. Геометрия крышки объединяется в один меш; для новых этикеток не загружаются изображения из сети.
 
-Визуальные ориентиры: [Moët & Chandon](https://www.moet.com/en-us/moet-imperial), [Bacardí](https://www.bacardi.com/our-rums/carta-blanca-rum/), [Bombay Sapphire](https://www.bombaysapphire.com/products/bombay-sapphire/), [Jägermeister](https://www.jagermeister.com/products/jagermeister), [Heineken](https://www.heineken.com/ca/en/our-products/heineken-original), [контурная бутылка Coca-Cola](https://www.coca-colacompany.com/about-us/history/the-history-of-the-coca-cola-contour-bottle).
+Визуальные ориентиры: [Bacardí](https://www.bacardi.com/our-rums/carta-blanca-rum/), [Bombay Sapphire](https://www.bombaysapphire.com/products/bombay-sapphire/), [Jägermeister](https://www.jagermeister.com/products/jagermeister), [Heineken](https://www.heineken.com/ca/en/our-products/heineken-original), [контурная бутылка Coca-Cola](https://www.coca-colacompany.com/about-us/history/the-history-of-the-coca-cola-contour-bottle).
 
 ## Новая модель разрушения
 
