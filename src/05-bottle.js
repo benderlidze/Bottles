@@ -8,4 +8,4 @@ function addPlank(width,y,height=.055,x=0,depth=.76){const mesh=new THREE.Mesh(n
 // Mass = remaining glass + liquid inside. LIQUID_DENSITY makes a bottle filled like at the start weigh ~1.25 as before;
 // a full bottle is heavier, an empty one weighs only its glass, and a leaking bottle gets lighter as it drains.
 const GLASS_MASS=.55,LIQUID_DENSITY=1.4;
-function syncBottleMass(ob,force){const glass=GLASS_MASS*ob.parts.filter(p=>p.attached).length/ob.parts.length,mass=Math.max(.15,glass+Math.max(0,ob.fluid)*LIQUID_DENSITY);if(!force&&Math.abs(mass-ob.body.mass)<.01)return;ob.body.mass=mass;ob.body.updateMassProperties();}
+function syncBottleMass(ob,force){if(ob.attachedCount===undefined)ob.attachedCount=ob.parts.length;const glass=GLASS_MASS*ob.attachedCount/ob.parts.length,mass=Math.max(.15,glass+Math.max(0,ob.fluid)*LIQUID_DENSITY);if(!force&&Math.abs(mass-ob.body.mass)<.01)return;ob.body.mass=mass;ob.body.updateMassProperties();}

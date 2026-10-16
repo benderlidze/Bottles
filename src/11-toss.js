@@ -20,6 +20,6 @@ while(bottles.length>TOSS_KEEP)removeBottle(bottles[0]);}
 function resolveToss(t){t.done=true;if(t.hit){tossHits++;tossStreak++;tossBest=Math.max(tossBest,tossStreak);tossSay(tossStreak>2?`${tossStreak} in a row!`:'Hit!');}else{tossStreak=0;tossSay('Missed. It landed.');}tossHud();tossNextAt=simTime+1.1;}
 function updateToss(){if(gameMode!=='toss'||!started)return;if(toss&&!toss.done){const p=toss.ob.body.position;if(p.y<-2||Math.abs(p.x)>14||simTime-toss.start>8)resolveToss(toss);return;}if(simTime<tossNextAt)return;
 if(tossCount<TOSS_ROUND){launchToss();return;}if(!tossOverShown){tossOverShown=true;tossSay(`Round over: ${tossHits} / ${TOSS_ROUND} · best streak ${tossBest} · R to play again`,7000);}}
-(function tossLoop(){requestAnimationFrame(tossLoop);updateToss();})();
+// Updated by the shared game loop; no extra animation-frame callback.
 function toggleMode(){gameMode=gameMode==='toss'?'pyramid':'toss';$('mode').textContent=gameMode==='toss'?'PYRAMID':'TOSS MODE';$('mode').classList.toggle('on',gameMode==='toss');rebuild();if(gameMode==='pyramid')pyramidHud();shadowFrames=3;}
 $('mode').onclick=toggleMode;document.addEventListener('keydown',e=>{if(e.target.tagName!=='INPUT'&&e.key.toLowerCase()==='t')toggleMode();});
