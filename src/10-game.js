@@ -58,9 +58,9 @@ if(removed)debris=debris.filter(Boolean);while(debris.length>DEBRIS_MAX){const d
 // Sphere sweeps own all ball/shell contacts, avoiding both tunnelling and a
 // duplicate impulse from the coarser rigid-body collision shapes.
 const _sw0=new CANNON.Vec3(),_sw1=new CANNON.Vec3(),_swp=new THREE.Vector3();
-function insideBottle(b,p,pad){if(p.y<-b.h/2-pad||p.y>b.h/2+pad)return false;const f=radiusAt(b,p.y),rx=b.w*f/2+pad,rz=b.depth*f/2+pad;const exponent=b.power+(2-b.power)*THREE.MathUtils.smoothstep((p.y+b.h/2)/b.h,.64,.83);return Math.pow(Math.abs(p.x)/rx,exponent)+Math.pow(Math.abs(p.z)/rz,exponent)<=1;}
+function insideBottle(b,p,pad){if(p.y<-b.h/2-pad||p.y>b.h/2+pad)return false;const {rx,rz,power:exponent}=bottleSection(b,p.y,-pad);return Math.pow(Math.abs(p.x)/rx,exponent)+Math.pow(Math.abs(p.z)/rz,exponent)<=1;}
 function glassSurfaceNormal(b,p){if(Math.abs(p.y)>=b.h/2-.026)return new THREE.Vector3(0,Math.sign(p.y),0);
- const field=(x,y,z)=>{const f=radiusAt(b,y),power=b.power+(2-b.power)*THREE.MathUtils.smoothstep((y+b.h/2)/b.h,.64,.83);return Math.pow(Math.abs(x)/(b.w*f/2),power)+Math.pow(Math.abs(z)/(b.depth*f/2),power);};
+ const field=(x,y,z)=>{const {rx,rz,power}=bottleSection(b,y);return Math.pow(Math.abs(x)/rx,power)+Math.pow(Math.abs(z)/rz,power);};
  const e=.001;return new THREE.Vector3(field(p.x+e,p.y,p.z)-field(p.x-e,p.y,p.z),field(p.x,p.y+e,p.z)-field(p.x,p.y-e,p.z),field(p.x,p.y,p.z+e)-field(p.x,p.y,p.z-e)).normalize();
 }
 function sweepBalls(dt){
