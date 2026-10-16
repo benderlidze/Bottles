@@ -1,5 +1,5 @@
 'use strict';
-const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.tint??(b.name==='JAMESON'?0x93c59a:0xffffff),roughness:.075,transmission:1,thickness:.085,ior:1.52,opacity:1,clearcoat:.18,clearcoatRoughness:.08,envMapIntensity:1.15,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.55}));
+const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.tint??(b.labelStyle===2?0x93c59a:0xffffff),roughness:.075,transmission:1,thickness:.085,ior:1.52,opacity:1,clearcoat:.18,clearcoatRoughness:.08,envMapIntensity:1.15,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.55}));
 const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.tint??0xffffff,metalness:0,roughness:.075,transmission:.94,thickness:.018,ior:1.52,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.45,opacity:1,side:THREE.FrontSide,envMapIntensity:.85}));
 const geometries=[];let bottles=[],planks=[],debris=[],balls=[],puddles=[],ripples=[],breakQueue=new Map(),broken=0,shots=0,started=false,slow=false,shake=0,simTime=0,resetAt=0;
 const N=8,R=4,TAU=Math.PI*2;let gameMode='pyramid';
@@ -13,16 +13,15 @@ const bottleProfiles=[
 [[0,.81],[.018,.94],[.05,1],[.61,1],[.655,.985],[.70,.92],[.75,.76],[.79,.52],[.815,.40],[.86,.39],[.88,.42],[1,.40]],
 // Champagne: broad heel, gently sloping shoulders and a long foiled neck.
 [[0,.83],[.025,.95],[.065,1],[.38,1],[.44,.98],[.51,.92],[.58,.79],[.65,.59],[.70,.44],[.77,.34],[.88,.33],[.90,.36],[.94,.35],[.985,.34],[1,.32]],
-// Carta Blanca: cylindrical body with a slender, extended neck.
+// White rum: cylindrical body with a slender, extended neck.
 [[0,.86],[.025,.97],[.065,1],[.60,1],[.65,.97],[.70,.81],[.755,.54],[.81,.32],[.9,.31],[.92,.34],[.95,.32],[1,.32]],
-// Sapphire: rounded rectangular flask, high shoulders, short round neck.
+// Gin: rounded rectangular flask, high shoulders, short round neck.
 [[0,.90],[.025,.97],[.065,1],[.64,1],[.69,.96],[.74,.82],[.80,.54],[.855,.35],[.91,.33],[.94,.35],[1,.34]],
-// Jägermeister: wide, flattened body and compact sloping shoulders.
+// Herbal liqueur: wide, flattened body and compact sloping shoulders.
 [[0,.87],[.025,.97],[.065,1],[.71,1],[.75,.96],[.79,.82],[.84,.52],[.88,.34],[.94,.33],[.97,.35],[1,.34]],
 // Long-neck beer bottle with a rolled lip for a crown closure.
 [[0,.84],[.025,.97],[.065,1],[.49,1],[.55,.96],[.61,.82],[.68,.61],[.76,.45],[.85,.38],[.94,.38],[.96,.43],[1,.42]],
-// Contour glass: rounded heel, pinched waist, fuller shoulder, narrow mouth.
-[[0,.80],[.025,.94],[.10,.98],[.20,.96],[.32,.85],[.42,.83],[.53,.94],[.60,1],[.65,.96],[.71,.79],[.78,.53],[.85,.40],[.94,.38],[.97,.42],[1,.40]]
+
 ];
 brands.forEach((b,i)=>{b.profile=bottleProfiles[i];b.strength??=[1.12,1,1.02,1.2,1.08,1.1][i]??1;});
 function radiusAt(b,y){const t=THREE.MathUtils.clamp((y+b.h/2)/b.h,0,1),ps=b.profile;for(let i=1;i<ps.length;i++)if(t<=ps[i][0]){const p=ps[i-1],q=ps[i],f=(t-p[0])/(q[0]-p[0]);const slope=(q[1]-p[1])/(q[0]-p[0]),before=i>1?(p[1]-ps[i-2][1])/(p[0]-ps[i-2][0]):slope,after=i<ps.length-1?(ps[i+1][1]-q[1])/(ps[i+1][0]-q[0]):slope,m0=before*slope>0?2*before*slope/(before+slope):0,m1=after*slope>0?2*after*slope/(after+slope):0,d=q[0]-p[0];return (2*f*f*f-3*f*f+1)*p[1]+(f*f*f-2*f*f+f)*d*m0+(-2*f*f*f+3*f*f)*q[1]+(f*f*f-f*f)*d*m1;}return ps.at(-1)[1];}

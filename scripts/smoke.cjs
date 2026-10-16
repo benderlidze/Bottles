@@ -9,7 +9,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright-core');
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('#start').click();
   assert.equal(await page.locator('#levelSelect').count(),0);
   assert.deepEqual(await page.evaluate(()=>({mode:gameMode,count:bottles.length})),{mode:'pyramid',count:15});
-  assert.deepEqual(await page.evaluate(()=>({brands:BASE_BRANDS,giants:brands.length-BASE_BRANDS,visible:new Set(bottles.map(b=>b.idx)).size})),{brands:12,giants:12,visible:12});
+  assert.deepEqual(await page.evaluate(()=>({brands:BASE_BRANDS,giants:brands.length-BASE_BRANDS,visible:new Set(bottles.map(b=>b.idx)).size})),{brands:11,giants:11,visible:11});
   await page.evaluate(()=>{
    window.singleBottle=(idx=0)=>{selectMode('toss');gameMode='pyramid';let seed=281;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};const ob=addBottle(0,0,idx);focus.set(0,1.1,0);zoom=2.2;resize();return ob;};
   });
@@ -53,7 +53,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright-core');
   await page.evaluate(()=>{selectMode('toss');launchToss();const ob=toss.ob;ob.body.position.set(0,4,0);ob.body.velocity.set(0,0,0);const ball=new CANNON.Body({mass:.28});ball.ball=true;ball.velocity.set(0,0,-30);ballStrike(ob,{body:ball},new THREE.Vector3(0,0,brands[ob.idx].depth/2));});
   assert.equal(await page.evaluate(()=>tossHits),1);
   // giant mode: one bottle twice the size; smashing it brings the next one right away
-  const giantRun=await page.evaluate(()=>{selectMode('giant');const first=giant.ob,size=brands[first.idx].h/brands[brands[first.idx].base].h,standing=bottles.length;let throws=0;
+  const giantRun=await page.evaluate(()=>{const random=Math.random;Math.random=()=>{Math.random=random;return .01;};selectMode('giant');const first=giant.ob,size=brands[first.idx].h/brands[brands[first.idx].base].h,standing=bottles.length;let throws=0;
    while(giant.phase==='standing'&&throws<40){const ob=giant.ob;camera.updateMatrixWorld();const t=new THREE.Vector3(0,ob.body.position.y,0).project(camera);bottleLab.aimAndThrow(t.x,t.y,60);bottleLab.advance(.8);throws++;}
    bottleLab.advance(2);return {size,standing,throws,smashed:giantSmashed,count:bottles.length,replaced:giant.ob!==first&&giant.phase==='standing'};});
   assert.equal(giantRun.size,2);assert.ok(giantRun.standing===1&&giantRun.smashed===1&&giantRun.count===1&&giantRun.replaced,JSON.stringify(giantRun));
@@ -61,6 +61,6 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright-core');
   await fs.mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/fracture.png'});
   await page.setViewportSize({width:390,height:844});await page.evaluate(()=>selectMode('pyramid'));await page.mouse.move(190,440);await page.mouse.down();await page.waitForFunction(()=>trajectory.visible);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'artifacts/mobile.png'});await page.mouse.up();
-  assert.deepEqual(errors,[]);console.log('PASS: free sandbox, 12 bottle profiles/liquid/labels/projectile hits, bond fracture, glass mass, fragment momentum, impact energy, reset cleanup, sound polyphony/mute, toss, giant mode and mobile aiming.');console.log(JSON.stringify({fracture,shots,cleanup,catalogue,audio,giantRun},null,2));
+  assert.deepEqual(errors,[]);console.log('PASS: free sandbox, 11 bottle profiles/liquid/labels/projectile hits, bond fracture, glass mass, fragment momentum, impact energy, reset cleanup, sound polyphony/mute, toss, giant mode and mobile aiming.');console.log(JSON.stringify({fracture,shots,cleanup,catalogue,audio,giantRun},null,2));
  }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});
