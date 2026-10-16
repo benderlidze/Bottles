@@ -93,28 +93,20 @@ function drawBondCracks(ob){
 function scatterFragments(ob,fragments,hit){
   if(!fragments.length)return;
   const direction=new CANNON.Vec3(hit.incoming?.x||0,hit.incoming?.y||0,hit.incoming?.z||-1);direction.normalize();
-  const bodies=fragments.map(f=>f.body),weights=[];let totalMass=ob.body.mass,mean=new CANNON.Vec3();
-  for(const f of fragments){
-    const d=f.localCenter.distanceTo(hit.point),w=Math.exp(-d/.55);
-    const outward=new CANNON.Vec3(f.localCenter.x,0,f.localCenter.z);outward.normalize();ob.body.quaternion.vmult(outward,outward);
-    const kick=direction.scale(w*2).vadd(outward.scale(.4+w*.4));weights.push(kick);mean.vadd(kick.scale(f.body.mass),mean);totalMass+=f.body.mass;
-  }
-  mean.scale(1/totalMass,mean);let rawEnergy=.5*ob.body.mass*mean.lengthSquared();
-  for(let i=0;i<bodies.length;i++){weights[i].vsub(mean,weights[i]);rawEnergy+=.5*bodies[i].mass*weights[i].lengthSquared();}
-  // The scatter budget comes from dissipated impact energy, never an arbitrary explosion.
-  const scale=Math.sqrt(Math.min(hit.energy*.045,2.4)/Math.max(rawEnergy,.0001));
-  ob.body.velocity.vsub(mean.scale(scale),ob.body.velocity);
-  for(let i=0;i<bodies.length;i++)bodies[i].velocity.vadd(weights[i].scale(scale),bodies[i].velocity);
-  // Off-centre stress gives every shard its own rotation. Balance the angular
-  // impulses on the remnant and cap their total energy instead of random spin.
-  const torques=[],spin=[],sumTorque=new CANNON.Vec3();let spinEnergy=0;
+  const weights=[],spins=[],torques=[];let totalMass=ob.body.mass,mean=new CANNON.Vec3();
+  for(const f of fragments){const w=Math.exp(-f.localCenter.distanceTo(hit.point)/.55),out=new CANNON.Vec3(f.localCenter.x,0,f.localCenter.z);out.normalize();ob.body.quaternion.vmult(out,out);const v=direction.scale(w*2).vadd(out.scale(.4+w*.4));weights.push(v);mean.vadd(v.scale(f.body.mass),mean);totalMass+=f.body.mass;}
+  mean.scale(1/totalMass,mean);let kinetic=.5*ob.body.mass*mean.lengthSquared();const angularMomentum=new CANNON.Vec3();
   for(let i=0;i<fragments.length;i++){
-    const local=hit.point.clone().sub(fragments[i].localCenter),arm=ob.body.quaternion.vmult(new CANNON.Vec3(local.x,local.y,local.z));
-    const torque=arm.cross(weights[i].scale(bodies[i].mass)),omega=bodies[i].invInertiaWorld.vmult(torque);
-    torques.push(torque);spin.push(omega);sumTorque.vadd(torque,sumTorque);spinEnergy+=.5*torque.dot(omega);
+    const f=fragments[i];weights[i].vsub(mean,weights[i]);kinetic+=.5*f.body.mass*weights[i].lengthSquared();
+    const r=f.body.position.vsub(ob.body.position);angularMomentum.vadd(r.cross(weights[i].scale(f.body.mass)),angularMomentum);
+    const local=hit.point.clone().sub(f.localCenter),arm=ob.body.quaternion.vmult(new CANNON.Vec3(local.x,local.y,local.z));
+    const torque=arm.cross(weights[i].scale(f.body.mass*.15)),spin=f.body.invInertiaWorld.vmult(torque);
+    torques.push(torque);spins.push(spin);angularMomentum.vadd(torque,angularMomentum);kinetic+=.5*torque.dot(spin);
   }
-  const reaction=ob.body.invInertiaWorld.vmult(sumTorque);spinEnergy+=.5*sumTorque.dot(reaction);
-  const spinScale=Math.sqrt(Math.min(hit.energy*.018,.8)/Math.max(.00001,spinEnergy));
-  ob.body.angularVelocity.vsub(reaction.scale(spinScale),ob.body.angularVelocity);
-  for(let i=0;i<bodies.length;i++)bodies[i].angularVelocity.vadd(spin[i].scale(spinScale),bodies[i].angularVelocity);
+  const reaction=ob.body.invInertiaWorld.vmult(angularMomentum);kinetic+=.5*angularMomentum.dot(reaction);
+  // One shared scale bounds all translational and rotational scatter energy.
+  // Remnant reactions balance both linear and angular momentum of the spray.
+  const scale=Math.sqrt(Math.min(hit.energy*.06,2.4)/Math.max(kinetic,.00001));
+  ob.body.velocity.vsub(mean.scale(scale),ob.body.velocity);ob.body.angularVelocity.vsub(reaction.scale(scale),ob.body.angularVelocity);
+  for(let i=0;i<fragments.length;i++){fragments[i].body.velocity.vadd(weights[i].scale(scale),fragments[i].body.velocity);fragments[i].body.angularVelocity.vadd(spins[i].scale(scale),fragments[i].body.angularVelocity);}
 }

@@ -50,15 +50,13 @@ const vec=new THREE.Vector3(),normal=new THREE.Vector3(),invQ=new THREE.Quaterni
 const stackBodies=[];function wakeStack(){stackBodies.length=0;for(const o of bottles)stackBodies.push(o.body);for(const o of planks)stackBodies.push(o.body);for(const m of stackBodies){if(m.sleepState===2||(m.velocity.lengthSquared()<.01&&m.angularVelocity.lengthSquared()<.01))continue;for(const s of stackBodies)if(s.sleepState===2&&s.position.y>m.position.y-.6&&Math.abs(s.position.x-m.position.x)<3&&Math.abs(s.position.z-m.position.z)<2.5)s.wakeUp();}}
 // cannon has no rolling resistance: slow, low bodies (rolling bottles, balls, rocking shards) would never fall asleep. Bleed off their last bit of motion.
 function settleDamping(){for(const b of world.bodies){if(b.mass===0||b.sleepState===2)continue;const v=b.velocity.lengthSquared(),w=b.angularVelocity.lengthSquared();if(v<.16&&w<1){b.velocity.scale(.985,b.velocity);b.angularVelocity.scale(.97,b.angularVelocity);}if(b.ball&&b.position.y<.2){b.velocity.scale(.993,b.velocity);b.angularVelocity.scale(.993,b.angularVelocity);}if(b.position.y<-.6&&!b.bottle){b.velocity.set(0,0,0);b.sleep();}}}
-// Debris (body group 8) collides with balls, table and shelves, never with bottles: a shard spawns overlapping its own
-// bottle, and resolving that overlap used to launch the bottle into the air.
-// Light shards jitter on top of heavy bottles and never sleep. After a short flight a shard only collides with the table
-// and balls, so it drops onto the table, falls asleep and gets baked into static batches (no physics, one draw call per material).
-const DEBRIS_MAX=180,DEBRIS_FLIGHT=2.5;
-function settleDebris(dt){let removed=false;for(let i=0;i<debris.length;i++){const d=debris[i],b=d.body;if(b.position.y<-3||Math.abs(b.position.x)>24||Math.abs(b.position.z)>24||(d.age||0)>10){world.removeBody(b);clearObject(d.mesh);debris[i]=null;removed=true;continue;}if(d.enableAt)continue;d.age=(d.age||0)+dt;if(d.age>DEBRIS_FLIGHT&&b.collisionFilterMask!==6){b.collisionFilterMask=6;b.wakeUp();}if(b.sleepState!==2||b.collisionFilterMask!==6)continue;world.removeBody(b);d.mesh.position.copy(b.position);d.mesh.quaternion.copy(b.quaternion);bakeStatic(d.mesh);debris[i]=null;removed=true;}
+// Keep moving debris in contact with the table, shelves and bottles. Only
+// sleeping pieces near the table are baked; airborne fragments retain physics.
+const DEBRIS_MAX=240;
+function settleDebris(dt){let removed=false;for(let i=0;i<debris.length;i++){const d=debris[i],b=d.body;if(b.position.y<-3||Math.abs(b.position.x)>24||Math.abs(b.position.z)>24||(d.age||0)>45){world.removeBody(b);clearObject(d.mesh);debris[i]=null;removed=true;continue;}if(d.enableAt)continue;d.age=(d.age||0)+dt;if(b.sleepState!==2||b.position.y>.5)continue;world.removeBody(b);d.mesh.position.copy(b.position);d.mesh.quaternion.copy(b.quaternion);bakeStatic(d.mesh);debris[i]=null;removed=true;}
 if(removed)debris=debris.filter(Boolean);while(debris.length>DEBRIS_MAX){const d=debris.shift();world.removeBody(d.body);clearObject(d.mesh);}}
-// A fast ball moves ~30 cm per step and can tunnel through the thin glass, only grazing it (a crack instead of a hole).
-// Sweep each fast ball's path through nearby bottles and register the hit at the real entry point with full energy.
+// Sphere sweeps own all ball/shell contacts, avoiding both tunnelling and a
+// duplicate impulse from the coarser rigid-body collision shapes.
 const _sw0=new CANNON.Vec3(),_sw1=new CANNON.Vec3(),_swp=new THREE.Vector3();
 function insideBottle(b,p,pad){if(p.y<-b.h/2-pad||p.y>b.h/2+pad)return false;const f=radiusAt(b,p.y),rx=b.w*f/2+pad,rz=b.depth*f/2+pad;const exponent=b.power+(2-b.power)*THREE.MathUtils.smoothstep((p.y+b.h/2)/b.h,.64,.83);return Math.pow(Math.abs(p.x)/rx,exponent)+Math.pow(Math.abs(p.z)/rz,exponent)<=1;}
 function glassSurfaceNormal(b,p){if(Math.abs(p.y)>=b.h/2-.026)return new THREE.Vector3(0,Math.sign(p.y),0);
@@ -102,5 +100,3 @@ const origStep=world.step.bind(world);world.step=(...a)=>{const t=performance.no
 const origRender=renderer.render.bind(renderer);renderer.render=(...a)=>{const t=performance.now();origRender(...a);perfStat.render+=performance.now()-t;};
 setInterval(()=>{const now=performance.now(),fps=frames*1000/(now-last);el.textContent=`FPS ${fps.toFixed(0)}\nphys ${(perfStat.phys/Math.max(1,frames)).toFixed(1)}ms/frame (${(perfStat.steps/Math.max(1,frames)).toFixed(1)} steps)\nrender ${(perfStat.render/Math.max(1,frames)).toFixed(1)}ms\nres x${pixelRatio.toFixed(2)}  calls ${renderer.info.render.calls}\nawake ${world.bodies.filter(b=>b.sleepState!==2).length}/${world.bodies.length}`;frames=0;last=now;perfStat.phys=perfStat.render=perfStat.steps=0;},500);
 (function tick(){frames++;requestAnimationFrame(tick);})();})();
-
-

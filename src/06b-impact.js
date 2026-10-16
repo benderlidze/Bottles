@@ -5,7 +5,7 @@ function spawnGlassFragment(ob,parts,sourceBody,referenceCenter=new THREE.Vector
   const localOffset=center.clone().sub(referenceCenter),offset=new CANNON.Vec3(localOffset.x,localOffset.y,localOffset.z);
   const wp=sourceBody.pointToWorldFrame(offset),group=new THREE.Group();
   const body=new CANNON.Body({mass:mass+(cap?.02:0),material:glassPhys,position:wp,linearDamping:.025,angularDamping:.055,collisionFilterGroup:8,collisionFilterMask:4,sleepSpeedLimit:.16,sleepTimeLimit:.8});
-  body.quaternion.copy(sourceBody.quaternion);body.sourceBottle=ob.body;
+  body.quaternion.copy(sourceBody.quaternion);body.sourceBottle=ob.body;body.detachedAt=simTime;
   const glass=[],paper=[];
   for(const p of parts){
     const mesh=new THREE.Mesh(p.geo);mesh.position.copy(center).negate();glass.push(mesh);

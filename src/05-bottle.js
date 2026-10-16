@@ -9,4 +9,3 @@ function addPlank(width,y,height=.055,x=0,depth=.76){const mesh=new THREE.Mesh(n
 // a full bottle is heavier, an empty one weighs only its glass, and a leaking bottle gets lighter as it drains.
 const GLASS_MASS=.55,LIQUID_DENSITY=1.4;
 function syncBottleMass(ob,force){if(ob.attachedCount===undefined)ob.attachedCount=ob.parts.length;const glass=.07+(ob.capDetached?0:.02)+.46*(ob.remainingArea/ob.shellArea),mass=Math.max(.07,glass+Math.max(0,ob.fluid)*LIQUID_DENSITY);if(!force&&Math.abs(mass-ob.body.mass)<.01)return;ob.body.mass=mass;ob.body.updateMassProperties();}
-

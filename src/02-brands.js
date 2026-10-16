@@ -1,9 +1,9 @@
 'use strict';
 const world=new CANNON.World({gravity:new CANNON.Vec3(0,-9.81,0),allowSleep:true});world.broadphase=new CANNON.SAPBroadphase(world);world.solver.iterations=22;world.solver.tolerance=.001;
-// Fragments can hit neighbouring bottles, but cannot collide with their source
+// Fragments can hit neighbouring bottles, but briefly ignore their source
 // shell. The thin colliders can overlap slightly along their original seams.
 const baseCollisionPairs=world.broadphase.collisionPairs.bind(world.broadphase);
-world.broadphase.collisionPairs=(world,pairsA,pairsB)=>{baseCollisionPairs(world,pairsA,pairsB);let write=0;for(let i=0;i<pairsA.length;i++){const a=pairsA[i],b=pairsB[i];if(a.sourceBottle===b||b.sourceBottle===a)continue;pairsA[write]=a;pairsB[write++]=b;}pairsA.length=pairsB.length=write;};
+world.broadphase.collisionPairs=(world,pairsA,pairsB)=>{baseCollisionPairs(world,pairsA,pairsB);let write=0;for(let i=0;i<pairsA.length;i++){const a=pairsA[i],b=pairsB[i];if((a.sourceBottle===b&&simTime-a.detachedAt<.2)||(b.sourceBottle===a&&simTime-b.detachedAt<.2))continue;pairsA[write]=a;pairsB[write++]=b;}pairsA.length=pairsB.length=write;};
 const glassPhys=new CANNON.Material('glass'),floorPhys=new CANNON.Material('wood'),steelPhys=new CANNON.Material('steel');world.addContactMaterial(new CANNON.ContactMaterial(glassPhys,floorPhys,{friction:.55,restitution:.06}));world.addContactMaterial(new CANNON.ContactMaterial(glassPhys,glassPhys,{friction:.45,restitution:.05}));world.addContactMaterial(new CANNON.ContactMaterial(steelPhys,glassPhys,{friction:.25,restitution:.16}));world.addContactMaterial(new CANNON.ContactMaterial(steelPhys,floorPhys,{friction:.3,restitution:.35}));world.defaultContactMaterial.friction=.4;
 const ground=new CANNON.Body({mass:0,material:floorPhys,collisionFilterGroup:4,collisionFilterMask:-1});ground.addShape(new CANNON.Plane());ground.quaternion.setFromEuler(-Math.PI/2,0,0);ground.position.y=-.01;world.addBody(ground);
 const brands=[
