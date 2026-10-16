@@ -1,6 +1,6 @@
 'use strict';
-const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.name==='JAMESON'?0x93c59a:0xffffff,roughness:.075,transmission:1,thickness:.085,ior:1.52,opacity:1,clearcoat:.18,clearcoatRoughness:.08,envMapIntensity:1.15,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.55}));
-const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.075,transmission:.94,thickness:.018,ior:1.52,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.45,opacity:1,side:THREE.FrontSide,envMapIntensity:.85}));
+const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.tint??(b.name==='JAMESON'?0x93c59a:0xffffff),roughness:.075,transmission:1,thickness:.085,ior:1.52,opacity:1,clearcoat:.18,clearcoatRoughness:.08,envMapIntensity:1.15,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.55}));
+const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.tint??0xffffff,metalness:0,roughness:.075,transmission:.94,thickness:.018,ior:1.52,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.45,opacity:1,side:THREE.FrontSide,envMapIntensity:.85}));
 const geometries=[];let bottles=[],planks=[],debris=[],balls=[],puddles=[],ripples=[],breakQueue=new Map(),broken=0,shots=0,started=false,slow=false,shake=0,simTime=0,resetAt=0;
 const N=8,R=4,TAU=Math.PI*2;let gameMode='pyramid';
 function countBroken(ob){if(ob.counted)return;ob.counted=true;broken++;refreshRoundHUD();}
@@ -10,9 +10,21 @@ const bottleProfiles=[
 [[0,.83],[.025,.96],[.065,1],[.565,1],[.61,.97],[.655,.85],[.70,.64],[.75,.39],[.79,.30],[.89,.30],[.915,.33],[.94,.31],[1,.31]],
 [[0,.90],[.035,.98],[.08,1],[.51,1],[.57,.99],[.64,.91],[.70,.72],[.75,.48],[.78,.32],[.94,.31],[1,.32]],
 [[0,.90],[.018,.96],[.045,1],[.625,1],[.65,.99],[.69,.91],[.735,.69],[.79,.37],[.82,.32],[.97,.32],[1,.34]],
-[[0,.81],[.018,.94],[.05,1],[.61,1],[.655,.985],[.70,.92],[.75,.76],[.79,.52],[.815,.40],[.86,.39],[.88,.42],[1,.40]]
+[[0,.81],[.018,.94],[.05,1],[.61,1],[.655,.985],[.70,.92],[.75,.76],[.79,.52],[.815,.40],[.86,.39],[.88,.42],[1,.40]],
+// Champagne: broad heel, gently sloping shoulders and a long foiled neck.
+[[0,.85],[.025,.96],[.07,1],[.49,1],[.55,.97],[.62,.88],[.69,.70],[.76,.47],[.82,.33],[.91,.30],[.94,.32],[.98,.33],[1,.32]],
+// Carta Blanca: cylindrical body with a slender, extended neck.
+[[0,.86],[.025,.97],[.065,1],[.60,1],[.65,.97],[.70,.81],[.755,.54],[.81,.32],[.9,.31],[.92,.34],[.95,.32],[1,.32]],
+// Sapphire: rounded rectangular flask, high shoulders, short round neck.
+[[0,.90],[.025,.97],[.065,1],[.64,1],[.69,.96],[.74,.82],[.80,.54],[.855,.35],[.91,.33],[.94,.35],[1,.34]],
+// Jägermeister: wide, flattened body and compact sloping shoulders.
+[[0,.87],[.025,.97],[.065,1],[.71,1],[.75,.96],[.79,.82],[.84,.52],[.88,.34],[.94,.33],[.97,.35],[1,.34]],
+// Long-neck beer bottle with a rolled lip for a crown closure.
+[[0,.84],[.025,.97],[.065,1],[.49,1],[.55,.96],[.61,.82],[.68,.61],[.76,.45],[.85,.38],[.94,.38],[.96,.43],[1,.42]],
+// Contour glass: rounded heel, pinched waist, fuller shoulder, narrow mouth.
+[[0,.80],[.025,.94],[.10,.98],[.20,.96],[.32,.85],[.42,.83],[.53,.94],[.60,1],[.65,.96],[.71,.79],[.78,.53],[.85,.40],[.94,.38],[.97,.42],[1,.40]]
 ];
-brands.forEach((b,i)=>{b.profile=bottleProfiles[i];b.strength=[1.12,1,1.02,1.2,1.08,1.1][i];});
+brands.forEach((b,i)=>{b.profile=bottleProfiles[i];b.strength??=[1.12,1,1.02,1.2,1.08,1.1][i]??1;});
 function radiusAt(b,y){const t=THREE.MathUtils.clamp((y+b.h/2)/b.h,0,1),ps=b.profile;for(let i=1;i<ps.length;i++)if(t<=ps[i][0]){const p=ps[i-1],q=ps[i],f=(t-p[0])/(q[0]-p[0]);const slope=(q[1]-p[1])/(q[0]-p[0]),before=i>1?(p[1]-ps[i-2][1])/(p[0]-ps[i-2][0]):slope,after=i<ps.length-1?(ps[i+1][1]-q[1])/(ps[i+1][0]-q[0]):slope,m0=before*slope>0?2*before*slope/(before+slope):0,m1=after*slope>0?2*after*slope/(after+slope):0,d=q[0]-p[0];return (2*f*f*f-3*f*f+1)*p[1]+(f*f*f-2*f*f+f)*d*m0+(-2*f*f*f+3*f*f)*q[1]+(f*f*f-f*f)*d*m1;}return ps.at(-1)[1];}
 // One cross-section for rendering, liquid, ray sweeps and fracture surfaces.
 // Rectangular bodies become circular at their own shoulder/neck heights.
@@ -28,7 +40,7 @@ function profileBand(b,lo,hi,outset=0,segments=40){const positions=[],indices=[]
 }
 function surfaceNormal(b,a,y){const da=surfPoint(b,a+.0001,y).sub(surfPoint(b,a-.0001,y)),dy=surfPoint(b,a,y+.0001).sub(surfPoint(b,a,y-.0001));return da.cross(dy).normalize();}
 function mergeGeometry(gs){let p=[],n=[];for(let g of gs){const arr=Array.from(g.attributes.position.array);for(let i=g.userData.surfaceCount*3;i<arr.length;i++)arr[i]=0;p.push(...arr);n.push(...g.attributes.normal.array);}let g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));return g;}
-function makeLiquid(ob){const b=brands[ob.idx],points=[],rings=[.035,.1,.25,.4,.55,...b.profile.filter(p=>p[0]>.57&&p[0]<.97).map(p=>p[0]),.97];const vertices=[],triangles=[],edges=[];
+function makeLiquid(ob){const b=brands[ob.idx],points=[],rings=[.035,...b.profile.filter(p=>p[0]>.035&&p[0]<.97).map(p=>p[0]),.97];const vertices=[],triangles=[],edges=[];
 for(let j=0;j<rings.length;j++)for(let k=0;k<24;k++){let p=surfPoint(b,k/24*TAU,-b.h/2+rings[j]*b.h,.045);vertices.push(p);if(j){edges.push([vertices.length-1,vertices.length-25]);}if(k)edges.push([vertices.length-1,vertices.length-2]);if(k===23)edges.push([vertices.length-1,vertices.length-24]);}
 for(let j=0;j<rings.length-1;j++)for(let k=0;k<24;k++){let a=j*24+k,c=j*24+(k+1)%24;triangles.push(a,c,c+24,a,c+24,a+24);}for(let k=1;k<23;k++)triangles.push(0,k+1,k,(rings.length-1)*24,(rings.length-1)*24+k,(rings.length-1)*24+k+1);
 const geo=new THREE.BufferGeometry();geo.setFromPoints(vertices);geo.setIndex(triangles);geo.computeVertexNormals();ob.liqPlane=new THREE.Plane(new THREE.Vector3(0,-1,0));const mat=new THREE.MeshPhysicalMaterial({color:b.liquid,roughness:.20,metalness:0,transparent:false,opacity:b.clearLiquid?.10:.44,blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquation:THREE.AddEquation,side:THREE.DoubleSide,clippingPlanes:[ob.liqPlane],depthWrite:false});ob.liq=new THREE.Mesh(geo,mat);ob.liq.renderOrder=1;ob.group.add(ob.liq);const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(1800),3));sg.setDrawRange(0,0);ob.surf=new THREE.Mesh(sg,new THREE.MeshPhysicalMaterial({color:b.liquid,metalness:.03,roughness:.045,transparent:false,opacity:b.clearLiquid?.18:.5,blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquation:THREE.AddEquation,side:THREE.DoubleSide,depthWrite:false}));ob.surf.renderOrder=2;ob.group.add(ob.surf);ob.liquidVerts=vertices;ob.liquidEdges=edges;ob.samples=[];

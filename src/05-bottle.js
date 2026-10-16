@@ -13,8 +13,21 @@ function syncBottleMass(ob,force){if(ob.attachedCount===undefined)ob.attachedCou
 function makeBottleCap(b){
  const cap=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:b.cap,metalness:b.capMetal??.12,roughness:.4,envMapIntensity:.55});
  const sleeve=b.sleeve??.055,lo=1-sleeve;
+ if(b.closure==='crown'){
+  const r=bottleSection(b,b.h/2).rx+.012,g=new THREE.CylinderGeometry(r,r*1.08,.05,84,1),p=g.attributes.position;
+  for(let i=0;i<p.count;i++){const a=Math.atan2(p.getX(i),p.getZ(i)),f=1+.035*Math.cos(a*21)*(p.getY(i)<0?1:0);p.setX(i,p.getX(i)*f);p.setZ(i,p.getZ(i)*f);}
+  g.translate(0,b.h/2-.015,0);g.computeVertexNormals();return new THREE.Mesh(g,mat);
+ }
  const shell=new THREE.Mesh(profileBand(b,lo,1,.012),mat);cap.add(shell);
  for(let k=0;k<3;k++){const y=b.h/2-.025-k*.022,r=bottleSection(b,y).rx+.014,m=new THREE.Mesh(new THREE.TorusGeometry(r,.0035,4,32),mat);m.rotation.x=Math.PI/2;m.position.y=y;cap.add(m);}
+ if(b.closure==='foil'){
+  // Creases and a rolled lower foil edge, baked into the same draw call.
+  for(let k=0;k<28;k++){
+   const a=k/28*TAU,points=[];for(let j=0;j<=8;j++){const t=lo+.012+(sleeve-.025)*j/8;points.push(surfPoint(b,a+Math.sin(j*.8+k)*.008,(t-.5)*b.h,-.014));}
+   cap.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),8,.0018,3,false),mat));
+  }
+  const y=(lo+.01-.5)*b.h,r=bottleSection(b,y).rx+.014,edge=new THREE.Mesh(new THREE.TorusGeometry(r,.006,5,40),mat);edge.rotation.x=Math.PI/2;edge.position.y=y;cap.add(edge);
+ }
  if(b.closure==='wax'){
   cap.add(new THREE.Mesh(profileBand(b,.84,1,.02),mat));
   for(let k=0;k<11;k++){const len=rnd(.08,.23),m=new THREE.Mesh(new THREE.CapsuleGeometry(.012,len,3,5),mat),a=k/11*TAU;m.position.copy(surfPoint(b,a,b.h*.34-len/2,-.009));cap.add(m);}
