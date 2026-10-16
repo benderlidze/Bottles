@@ -21,9 +21,9 @@ function drawFoamJet(ob,p,dir,speed,activity,dt){
  ob.foamJetElapsed=(ob.foamJetElapsed||0)+dt;if(ob.foamJetElapsed<1/30)return;ob.foamJetElapsed=0;
  const side=new THREE.Vector3(Math.abs(dir.y)>.9?1:0,Math.abs(dir.y)>.9?0:1,0).cross(dir).normalize(),up=dir.clone().cross(side),v=dir.clone().multiplyScalar(speed).add(ob.body.velocity),positions=mesh.geometry.attributes.position;
  for(let j=0;j<=12;j++){
-  const t=j/12*(.10+ob.pressure*.12),center=p.clone().addScaledVector(v,t);center.y-=3.6*t*t;
-  const radius=(.014+.025*Math.sqrt(ob.pressure))*Math.sqrt(activity)*(1-j/15);
-  for(let k=0;k<8;k++){const a=k/8*TAU,r=radius*(1+.12*Math.sin(k*3+j*2+simTime*34)),point=center.clone().addScaledVector(side,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r);positions.setXYZ(j*8+k,point.x,Math.max(.025,point.y),point.z);}
+  const t=j/12*Math.min(ob.foamAge,.14+ob.pressure*.20),center=p.clone().addScaledVector(v,t);center.y-=3.6*t*t;
+  const radius=(.025+.065*Math.sqrt(ob.pressure))*Math.sqrt(activity)*Math.pow(1-j/12,.65);
+  for(let k=0;k<8;k++){const a=k/8*TAU,r=radius*(1+.25*Math.sin(k*3+j*2+simTime*34)),point=center.clone().addScaledVector(side,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r);positions.setXYZ(j*8+k,point.x,Math.max(.025,point.y),point.z);}
  }
  positions.needsUpdate=true;mesh.geometry.computeVertexNormals();
 }
@@ -36,36 +36,39 @@ function releaseChampagne(ob,fragments,hit){
  let patch=null,best=Infinity;for(const f of fragments)for(const p of f.parts){const d=p.center.distanceToSquared(hit.point);if(d<best){best=d;patch=p;}}
  if(!patch)return false;
  const b=brands[ob.idx];ob.vented=true;ob.pressurePops=(ob.pressurePops||0)+1;makeFoamJet(ob);
- ob.ventLocal=surfaceProject(b,patch.center);ob.ventNormal=glassSurfaceNormal(b,ob.ventLocal);ob.foamTime=2.6;ob.foamCarry=0;
+ ob.ventLocal=surfaceProject(b,patch.center);ob.ventNormal=glassSurfaceNormal(b,ob.ventLocal);ob.foamTime=3.6;ob.foamAge=0;ob.foamCarry=0;
  ob.pressure*=Math.min(1,ob.fluid/ob.capacity*1.4);
  // Stored gas adds a small radial kick; the shared scatter solver balances
  // both translation and rotation against the remnant, with a bounded budget.
  const strength=ob.pressure;scatterFragments(ob,fragments,{point:ob.ventLocal,energy:strength*.85,pressure:true});
- const {p,dir}=champagneJet(ob),amount=Math.min(ob.fluid*.05,.035),n=54;ob.fluid-=amount;
+ const {p,dir}=champagneJet(ob),amount=Math.min(ob.fluid*.08,.055),n=180;ob.fluid-=amount;
  for(let i=0;i<n;i++){
-  const v=dir.clone().multiplyScalar(rnd(2.2,5.2)*strength).add(new THREE.Vector3(rnd(-1.2,1.2),rnd(-.6,1.5),rnd(-1.2,1.2))).add(ob.body.velocity);
-  emitFoam(p.clone().addScaledVector(dir,.025),v,ob.idx,amount/n,rnd(.010,.025));
+  const v=dir.clone().multiplyScalar(rnd(6,11)*strength).add(new THREE.Vector3(rnd(-2.1,2.1),rnd(-.9,2.2),rnd(-2.1,2.1))).add(ob.body.velocity);
+  emitFoam(p.clone().addScaledVector(dir,.025),v,ob.idx,amount/n,rnd(.016,.040));
  }
  champagnePop(ob,strength);shake=Math.min(.05,shake+.012*strength);return true;
 }
 function updateChampagne(ob,dt){
  if(!ob.vented||dt<=0)return;
+ ob.foamAge+=dt;
  const open=THREE.MathUtils.clamp(1-ob.remainingArea/ob.shellArea,0,1);
- ob.pressure*=Math.exp(-dt*(1.1+7*Math.sqrt(open)));if(ob.pressure<.004)ob.pressure=0;
+ ob.pressure*=Math.exp(-dt*(.65+4*Math.sqrt(open)));if(ob.pressure<.004)ob.pressure=0;
  ob.foamTime=Math.max(0,ob.foamTime-dt);
  if(ob.fluid<.002||ob.foamTime<=0){ob.pressure=0;clearChampagne(ob);return;}
  // A missing shell releases one cloud and rapidly loses pressure. A small
  // puncture keeps a directed jet; dissolved gas leaves a softer foamy tail.
- const containment=Math.max(0,1-open*1.5),activity=Math.min(1,ob.foamTime/.7)*(ob.pressure*.8+containment*.32);
- const {p,dir}=champagneJet(ob),speed=.5+5*Math.sqrt(ob.pressure);
+ const containment=Math.max(0,1-open*1.5),activity=Math.min(1,ob.foamTime/.9)*(ob.pressure*.95+containment*.5);
+ const {p,dir}=champagneJet(ob),speed=1+9.5*Math.sqrt(ob.pressure);
  drawFoamJet(ob,p,dir,speed,activity,dt);
- ob.foamCarry+=dt*(120+240*ob.pressure)*activity;
- const n=Math.min(16,Math.floor(ob.foamCarry));ob.foamCarry-=n;
+ ob.foamCarry+=dt*(260+600*ob.pressure)*activity;
+ const n=Math.min(64,Math.floor(ob.foamCarry));ob.foamCarry-=n;
  if(n){
-  const amount=Math.min(ob.fluid,n*.0008);ob.fluid-=amount;
+  // More expanded foam per unit of liquid, rather than draining the bottle
+  // immediately just because the visible spray contains more bubbles.
+  const amount=Math.min(ob.fluid,n*.00035);ob.fluid-=amount;
   for(let i=0;i<n;i++){
-   const v=dir.clone().multiplyScalar(speed*rnd(.8,1.1)).add(new THREE.Vector3(rnd(-.32,.32),rnd(-.1,.4),rnd(-.32,.32))).add(ob.body.velocity);
-   emitFoam(p.clone().addScaledVector(dir,rnd(.02,.07)),v,ob.idx,amount/n,rnd(.012,.026));
+   const v=dir.clone().multiplyScalar(speed*rnd(.8,1.1)).add(new THREE.Vector3(rnd(-.65,.65),rnd(-.2,.7),rnd(-.65,.65))).add(ob.body.velocity);
+   emitFoam(p.clone().addScaledVector(dir,rnd(.02,.07)),v,ob.idx,amount/n,rnd(.018,.038));
   }
  }
  champagneHiss(ob,activity);
