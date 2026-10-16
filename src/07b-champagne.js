@@ -2,6 +2,7 @@
 // Stylised pressure and CO2 foam, in game units. Only a real opening vents it.
 // All bubbles share one bounded instanced draw, without additional rigid bodies.
 const FOAM_MAX=900,foamParticles=[],foamDummy=new THREE.Object3D();
+const FOAM_VISUAL_SCALE=1.6; // Render size only; emission, motion and liquid volume stay unchanged.
 const foamMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(1,7,5),new THREE.MeshStandardMaterial({color:0xfff7dc,roughness:.72,metalness:0,transparent:true,opacity:.91,depthWrite:false}),FOAM_MAX);
 foamMesh.count=0;foamMesh.frustumCulled=false;foamMesh.renderOrder=4;foamMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(foamMesh);let foamCursor=0;
 const foamJetMaterial=new THREE.MeshStandardMaterial({color:0xfff4d4,roughness:.8,side:THREE.DoubleSide});
@@ -80,7 +81,7 @@ function updateFoam(dt){
    f.v.multiplyScalar(Math.exp(-dt*1.35));f.v.y-=7.2*dt;f.p.addScaledVector(f.v,dt);
    if(f.p.y<.025){f.p.y=.025;f.landed=true;deposit(f.p,f.idx,f.volume);f.v.set(0,0,0);f.life=f.age+rnd(.65,1.3);}
   }
-  const growth=1+Math.min(.8,f.age*1.1),fade=Math.min(1,(f.life-f.age)/.45),radius=f.size*growth*Math.sqrt(Math.max(0,fade));
+  const growth=1+Math.min(.8,f.age*1.1),fade=Math.min(1,(f.life-f.age)/.45),radius=f.size*FOAM_VISUAL_SCALE*growth*Math.sqrt(Math.max(0,fade));
   foamDummy.position.copy(f.p);foamDummy.quaternion.identity();foamDummy.scale.set(radius*f.stretch,radius*(f.landed?.3:1),radius*(f.landed?1.4:1));foamDummy.updateMatrix();foamMesh.setMatrixAt(write,foamDummy.matrix);foamParticles[write++]=f;
  }
  foamParticles.length=write;foamMesh.count=write;if(write)foamMesh.instanceMatrix.needsUpdate=true;
