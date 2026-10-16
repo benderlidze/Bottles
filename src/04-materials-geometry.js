@@ -1,6 +1,6 @@
 'use strict';
-const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.name==='JAMESON'?0x93c59a:0xffffff,roughness:.06,transmission:1,thickness:.055,ior:1.51,opacity:1,envMapIntensity:.85,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.8}));
-const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.glass,metalness:.12,roughness:.10,transparent:true,opacity:.69,side:THREE.DoubleSide,envMapIntensity:1.7,depthWrite:false}));
+const glassMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:b.name==='JAMESON'?0x93c59a:0xffffff,roughness:.075,transmission:1,thickness:.085,ior:1.52,opacity:1,clearcoat:.18,clearcoatRoughness:.08,envMapIntensity:1.15,side:THREE.FrontSide,attenuationColor:new THREE.Color(b.glass),attenuationDistance:.55}));
+const fragmentMats=brands.map(b=>new THREE.MeshPhysicalMaterial({color:new THREE.Color(b.glass).lerp(new THREE.Color(0xffffff),.28),metalness:0,roughness:.085,ior:1.52,clearcoat:.35,transparent:true,opacity:.58,side:THREE.DoubleSide,forceSinglePass:true,envMapIntensity:1.6,depthWrite:false}));
 const geometries=[];let bottles=[],planks=[],debris=[],balls=[],puddles=[],ripples=[],breakQueue=new Map(),broken=0,shots=0,started=false,slow=false,shake=0,simTime=0,resetAt=0;
 const N=8,R=4,TAU=Math.PI*2;let gameMode='pyramid';
 function countBroken(ob){if(ob.counted)return;ob.counted=true;broken++;if(gameMode==='pyramid')$('broken').innerHTML=String(broken).padStart(2,'0')+'<span style="display:inline;font-size:14px"> / 15</span>';}
