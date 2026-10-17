@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node scripts/serve.cjs",
     "check": "node scripts/check.cjs",
-    "test": "node scripts/quality.cjs && node scripts/audio.cjs && node scripts/champagne.cjs && node scripts/smoke.cjs"
+    "test": "node scripts/quality.cjs && node scripts/audio.cjs && node scripts/drypage.cjs && node scripts/champagne.cjs && node scripts/smoke.cjs"
   },
   "devDependencies": { "playwright-core": "1.62.1" }
 }
