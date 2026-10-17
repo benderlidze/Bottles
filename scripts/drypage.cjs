@@ -8,7 +8,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright-core');
   const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.setDefaultTimeout(8000);page.on('pageerror',error=>errors.push(error.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   const links=await page.locator('a[href="https://drypage.app/app"]').evaluateAll(nodes=>nodes.map(link=>({target:link.target,rel:link.rel})));
-  assert.deepEqual(links,[{target:'_blank',rel:'noopener noreferrer'},{target:'_blank',rel:'noopener noreferrer'}]);
+  assert.deepEqual(links,Array(4).fill({target:'_blank',rel:'noopener noreferrer'}));
   await page.locator('#start').click();
   const pyramid=await page.evaluate(()=>{broken=bottles.length-1;countBroken({counted:false});return drypagePromo.classList.contains('show');});
   assert.equal(pyramid,true);await page.mouse.click(8,8);assert.equal(await page.locator('#drypagePromo.show').count(),1);await page.keyboard.press('Escape');assert.equal(await page.locator('#drypagePromo.show').count(),1);await page.locator('#drypageContinue').click();

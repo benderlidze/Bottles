@@ -32,7 +32,7 @@ input[type=range]{accent-color:#d7b27a;width:100%;height:18px;cursor:pointer;dis
 .di-text{display:flex;flex-direction:column;gap:3px;min-width:0}.drypage-intro strong{font:600 14px/1.15 Arial,sans-serif;letter-spacing:-.2px}.drypage-intro small{margin:0;color:#7c716b;font-size:11px;letter-spacing:0}.drypage-intro small b{color:#b0594a;font-weight:700;white-space:nowrap}
 .drypage-promo{position:fixed;z-index:8;inset:0;display:grid;place-items:center;padding:20px;background:#07100bd9;backdrop-filter:blur(5px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s,visibility .22s;overflow:auto}
 .drypage-promo.show{opacity:1;visibility:visible;pointer-events:auto}.drypage-promo.show .drypage-card{transform:none;opacity:1}
-.drypage-card{width:min(440px,100%);padding:24px 26px 26px;border-radius:24px;background:linear-gradient(#fbf9f3,#f3efe5);color:#24221f;box-shadow:0 30px 80px #000a,0 0 0 1px #ffffff40 inset;text-align:left;transform:translateY(14px) scale(.97);opacity:0;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .25s}
+.drypage-card{width:min(440px,100%);padding:24px 26px 26px;border-radius:24px;background:linear-gradient(#fbf9f3,#f3efe5);color:#24221f;box-shadow:0 30px 80px #000a,0 0 0 1px #ffffff40 inset;text-align:left}.drypage-promo .drypage-card{transform:translateY(14px) scale(.97);opacity:0;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .25s}
 .drypage-head{display:flex;align-items:center;gap:15px}.drypage-icon{width:66px;height:66px;border-radius:15px;box-shadow:0 6px 14px #3a2f2a33;flex:none}
 .drypage-name{font:700 22px/1 Arial,sans-serif;letter-spacing:-.6px}.drypage-sub{margin-top:4px;color:#6f655e;font:600 13px Arial,sans-serif}.drypage-rate{margin-top:5px;color:#8a7f77;font:12px Arial,sans-serif}.drypage-stars{color:#d98a6c;letter-spacing:1px}
 .drypage-stage{position:relative;display:flex;justify-content:center;align-items:flex-start;gap:12px;height:238px;margin:20px 0 20px;padding-top:16px;border-radius:18px;background:radial-gradient(120% 90% at 50% 0,#fffdf8,#ece5d8);overflow:hidden}
@@ -41,12 +41,20 @@ input[type=range]{accent-color:#d7b27a;width:100%;height:18px;cursor:pointer;dis
 .drypage-shot.a{transform:rotate(-3deg) translateY(6px)}.drypage-shot.b{transform:rotate(3deg)}
 .drypage-card h2{margin:0 0 9px;font:600 clamp(27px,7vw,34px)/1.05 Arial,sans-serif;letter-spacing:-1.1px}
 .drypage-card p{margin:0;color:#6d645d;font-size:14px;line-height:1.55}
-.drypage-actions{display:flex;gap:10px;margin-top:22px}.drypage-actions a,.drypage-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:50px;border-radius:13px;font:600 14px Arial,sans-serif;text-decoration:none;letter-spacing:.1px}
-.drypage-actions a{flex:1;background:linear-gradient(#c9806f,#b56a5a);color:#fffdf9;border:0;box-shadow:0 8px 18px #b56a5a55;transition:transform .15s,box-shadow .15s}.drypage-actions a:hover{transform:translateY(-1px);box-shadow:0 11px 22px #b56a5a66}
-.drypage-actions button{padding:0 18px;background:transparent;color:#5b504a;border:1px solid #d3c8bc}.drypage-actions button:hover{background:#00000008;color:#2f2824}
+.drypage-stores{display:flex;gap:10px;margin-top:22px}.drypage-store{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:50px;border-radius:13px;background:linear-gradient(#c9806f,#b56a5a);color:#fffdf9;font:600 14px Arial,sans-serif;text-decoration:none;white-space:nowrap;box-shadow:0 8px 18px #b56a5a55;transition:transform .15s,box-shadow .15s}.drypage-store:hover{transform:translateY(-1px);box-shadow:0 11px 22px #b56a5a66}
+.drypage-card button.drypage-ghost,.veil .drypage-card button.drypage-play{display:flex;width:100%;min-height:50px;margin-top:10px;padding:0 18px;align-items:center;justify-content:center;border-radius:13px;font:600 14px Arial,sans-serif;letter-spacing:.2px}
+.drypage-card button.drypage-ghost{background:transparent;color:#5b504a;border:1px solid #d3c8bc}.drypage-card button.drypage-ghost:hover{background:#00000008;color:#2f2824}
+.veil .drypage-card button.drypage-play{background:#1f2420;color:#f6efe0;border:0;letter-spacing:.6px;font-size:16px;min-height:56px}.veil .drypage-card button.drypage-play:hover:not(:disabled){background:#000}.veil .drypage-card button.drypage-play:disabled{opacity:.55;cursor:wait}
+.drypage-card-intro{width:min(440px,100%);margin-top:22px}.drypage-card-intro .drypage-stage{height:176px;margin:16px 0}.drypage-card-intro h2{font-size:24px}.drypage-card-intro p{font-size:13px;margin-bottom:0}.drypage-card-intro .drypage-stores{margin-top:16px}
+.veil{overflow:auto;justify-content:safe center}.veil h1{margin:10px 0 0}
 @media(max-width:420px){.drypage-card{padding:20px 18px 20px}.drypage-stage{height:210px}.drypage-shot{width:132px}.drypage-name{font-size:20px}}
 @media(max-height:620px){.drypage-promo{place-items:start center}.drypage-stage{height:170px}}
-@media(prefers-reduced-motion:reduce){.drypage-card,.drypage-intro,.drypage-actions a{transition:none}}
+@media(prefers-reduced-motion:reduce){.drypage-promo .drypage-card,.drypage-store{transition:none}}
 #error{display:none;color:#ffd0a2;max-width:500px;margin-top:20px;font-size:13px;line-height:1.6}
 @media(max-width:600px){.top{left:16px;right:16px;top:12px;gap:12px}.stat{gap:7px}.stat strong{font-size:23px}.stat span{font-size:8px;letter-spacing:.7px}.sound{gap:7px}.sound input{width:48px}.sound button{padding:10px 8px;font-size:9px}.bottom{bottom:max(12px,env(safe-area-inset-bottom))}.modes button{font-size:11px;min-height:44px}.controls{gap:14px}.actions button{min-height:44px}.eyebrow{font-size:8px;letter-spacing:2px}.veil h1{letter-spacing:7px}.drypage-card{padding:52px 22px 25px}.drypage-actions{flex-direction:column}.drypage-actions a,.drypage-actions button{width:100%}}
 @media(max-height:560px) and (min-width:600px){.top{top:10px}.bottom{bottom:10px;width:min(760px,calc(100% - 32px));flex-direction:row;align-items:stretch}.modes{flex:1}.controls{width:310px}.toast{top:22%}}
+
+.veil h1.intro-title{max-width:760px;font-size:clamp(28px,5.2vw,56px);line-height:1.12;letter-spacing:clamp(2px,.7vw,7px);margin:0 0 16px}
+.veil h1.intro-title{max-width:900px;font-size:clamp(21px,3.3vw,40px);letter-spacing:clamp(1.5px,.45vw,5px);margin:0 0 12px}
+.veil p{margin:0 0 6px;line-height:1.7}
+@media(max-height:900px){.drypage-card-intro{margin-top:14px;padding:18px 24px 20px}.drypage-card-intro .drypage-stage{height:132px;margin:12px 0}.drypage-card-intro h2{font-size:21px;margin-bottom:6px}.drypage-card-intro p{display:none}.drypage-card-intro .drypage-stores{margin-top:12px}.drypage-card-intro .drypage-icon{width:54px;height:54px}}

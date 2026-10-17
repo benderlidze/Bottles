@@ -21,5 +21,5 @@ async function warmUpShaders(){
  scene.remove(ball);trajectory.visible=false;
 }
 warmUpShaders().catch(e=>console.warn('shader warm-up failed',e)).finally(()=>{
- rebuild();shake=0;shadowFrames=3;warming=false;$('start').disabled=false;$('start').textContent='FIRST THROW';
+ rebuild();shake=0;shadowFrames=3;warming=false;$('start').disabled=false;$('start').textContent='Play';
 });

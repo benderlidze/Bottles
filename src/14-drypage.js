@@ -8,3 +8,7 @@ $('drypageContinue').addEventListener('click',hideDrypagePromo);
 const drypageOriginalRebuild=rebuild;rebuild=function(){drypageResetRound();hideDrypagePromo();return drypageOriginalRebuild();};
 const drypageOriginalToss=updateToss;updateToss=function(){drypageOriginalToss();if(gameMode==='toss'&&tossOverShown)showDrypagePromo('toss');};
 const drypageOriginalGiant=updateGiant;updateGiant=function(){drypageOriginalGiant();const milestone=Math.floor(giantSmashed/5);if(gameMode==='giant'&&milestone>drypageGiantMilestone){drypageGiantMilestone=milestone;showDrypagePromo(`giant-${milestone}`);}};
+
+// Store links: set the Google Play address here once it differs from the shared smart link.
+const DRYPAGE_LINKS={ios:'https://drypage.app/app',android:'https://drypage.app/app'};
+document.querySelectorAll('[data-store]').forEach(a=>{a.href=DRYPAGE_LINKS[a.dataset.store];});
