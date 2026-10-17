@@ -1,4 +1,21 @@
 'use strict';
+// THREE.EdgesGeometry with numeric instead of string hashing: the same algorithm, so the same edges in the same
+// order, without building ~9 strings per triangle (that made every new shard cost several milliseconds).
+const _eA=new THREE.Vector3(),_eB=new THREE.Vector3(),_eC=new THREE.Vector3(),_eN=new THREE.Vector3(),_eV=[_eA,_eB,_eC],_eT=[0,0,0],_eH=[0,0,0];
+function fastEdges(geometry,thresholdAngle){
+ const pos=geometry.getAttribute('position'),index=geometry.getIndex(),count=index?index.count:pos.count,P=1e4,thresholdDot=Math.cos(THREE.MathUtils.DEG2RAD*thresholdAngle),ids=new Map(),edges=new Map(),out=[];
+ const vid=v=>{const x=Math.round(v.x*P)+32768,y=Math.round(v.y*P)+32768,z=Math.round(v.z*P)+32768;if(x<0||y<0||z<0||x>65535||y>65535||z>65535)return -1;const k=(x*65536+y)*65536+z;let id=ids.get(k);if(id===undefined)ids.set(k,id=ids.size);return id;};
+ for(let i=0;i<count;i+=3){
+  for(let j=0;j<3;j++){_eT[j]=index?index.getX(i+j):i+j;_eV[j].fromBufferAttribute(pos,_eT[j]);if((_eH[j]=vid(_eV[j]))<0)return new THREE.EdgesGeometry(geometry,thresholdAngle);}
+  THREE.Triangle.getNormal(_eA,_eB,_eC,_eN);
+  if(_eH[0]===_eH[1]||_eH[1]===_eH[2]||_eH[2]===_eH[0])continue;
+  for(let j=0;j<3;j++){const n=(j+1)%3,hash=_eH[j]*16777216+_eH[n],reverse=_eH[n]*16777216+_eH[j],sibling=edges.get(reverse);
+   if(sibling){if(_eN.dot(sibling.normal)<=thresholdDot)out.push(_eV[j].x,_eV[j].y,_eV[j].z,_eV[n].x,_eV[n].y,_eV[n].z);edges.set(reverse,null);}
+   else if(!edges.has(hash))edges.set(hash,{index0:_eT[j],index1:_eT[n],normal:_eN.clone()});}
+ }
+ for(const e of edges.values())if(e){_eA.fromBufferAttribute(pos,e.index0);_eB.fromBufferAttribute(pos,e.index1);out.push(_eA.x,_eA.y,_eA.z,_eB.x,_eB.y,_eB.z);}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(out,3));return g;
+}
 function spawnGlassFragment(ob,parts,sourceBody,referenceCenter=new THREE.Vector3(),cap=null){
   const center=new THREE.Vector3();let mass=0;
   for(const p of parts){center.addScaledVector(p.center,p.mass);mass+=p.mass;}center.multiplyScalar(1/mass);
@@ -15,7 +32,7 @@ function spawnGlassFragment(ob,parts,sourceBody,referenceCenter=new THREE.Vector
     const shape=setShapeGroup(new CANNON.Box(p.shape.halfExtents.clone()),SG.DEBRIS);
     body.addShape(shape,new CANNON.Vec3(p.shapeOffset.x-center.x,p.shapeOffset.y-center.y,p.shapeOffset.z-center.z),p.shapeQuat);
   }
-  const geo=mergeMeshes(glass);group.add(new THREE.Mesh(geo,fragmentMats[ob.idx]),new THREE.LineSegments(new THREE.EdgesGeometry(geo,38),edgeMat));
+  const geo=mergeMeshes(glass);group.add(new THREE.Mesh(geo,fragmentMats[ob.idx]),new THREE.LineSegments(fastEdges(geo,38),edgeMat));
   if(paper.length)group.add(new THREE.Mesh(mergeMeshes(paper),labels[ob.idx]));
   if(cap){cap.removeFromParent();cap.position.copy(center).negate();group.add(cap);}
   sourceBody.quaternion.vmult(offset,offset);sourceBody.angularVelocity.cross(offset,body.velocity);body.velocity.vadd(sourceBody.velocity,body.velocity);body.angularVelocity.copy(sourceBody.angularVelocity);
@@ -53,7 +70,8 @@ function detach(ob,parts,hit){
   const takesCap=!ob.capDetached&&parts.some(p=>p.touchesTop)&&!ob.parts.some(p=>p.attached&&p.touchesTop);
   if(takesCap)ob.capDetached=true;
   const fragment=spawnGlassFragment(ob,parts,ob.body,new THREE.Vector3(),takesCap?ob.cap:null);
-  attr.needsUpdate=true;ob.shell.geometry.computeBoundingSphere();
+  // Detached vertices collapse to the bottle centre, so the existing bounding sphere still encloses the shell.
+  attr.needsUpdate=true;
   for(const p of ob.parts)if(p.attached&&p.neighbors.some(id=>!ob.parts[id].attached)){
     const a=p.geo.attributes.position;for(let i=p.geo.userData.surfaceCount;i<p.count;i++)attr.setXYZ(p.offset+i,a.getX(i),a.getY(i),a.getZ(i));
   }

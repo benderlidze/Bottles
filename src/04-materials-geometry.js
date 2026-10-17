@@ -24,11 +24,19 @@ const bottleProfiles=[
 
 ];
 brands.forEach((b,i)=>{b.profile=bottleProfiles[i];b.strength??=[1.12,1,1.02,1.2,1.08,1.1][i]??1;});
-function radiusAt(b,y){const t=THREE.MathUtils.clamp((y+b.h/2)/b.h,0,1),ps=b.profile;for(let i=1;i<ps.length;i++)if(t<=ps[i][0]){const p=ps[i-1],q=ps[i],f=(t-p[0])/(q[0]-p[0]);const slope=(q[1]-p[1])/(q[0]-p[0]),before=i>1?(p[1]-ps[i-2][1])/(p[0]-ps[i-2][0]):slope,after=i<ps.length-1?(ps[i+1][1]-q[1])/(ps[i+1][0]-q[0]):slope,m0=before*slope>0?2*before*slope/(before+slope):0,m1=after*slope>0?2*after*slope/(after+slope):0,d=q[0]-p[0];return (2*f*f*f-3*f*f+1)*p[1]+(f*f*f-2*f*f+f)*d*m0+(-2*f*f*f+3*f*f)*q[1]+(f*f*f-f*f)*d*m1;}return ps.at(-1)[1];}
+// Monotone cubic through the profile points. The per-segment tangents depend only on the profile, so they are
+// computed once per profile (same expressions, same values) instead of on every call.
+const profileSplines=new WeakMap();
+function profileSpline(ps){let S=profileSplines.get(ps);if(S)return S;const n=ps.length;S={x:new Float64Array(n),m0:new Float64Array(n),m1:new Float64Array(n)};
+ for(let i=0;i<n;i++)S.x[i]=ps[i][0];
+ for(let i=1;i<n;i++){const p=ps[i-1],q=ps[i],slope=(q[1]-p[1])/(q[0]-p[0]),before=i>1?(p[1]-ps[i-2][1])/(p[0]-ps[i-2][0]):slope,after=i<n-1?(ps[i+1][1]-q[1])/(ps[i+1][0]-q[0]):slope;S.m0[i]=before*slope>0?2*before*slope/(before+slope):0;S.m1[i]=after*slope>0?2*after*slope/(after+slope):0;}
+ profileSplines.set(ps,S);return S;}
+function radiusAt(b,y){const t=THREE.MathUtils.clamp((y+b.h/2)/b.h,0,1),ps=b.profile,S=profileSpline(ps),X=S.x;for(let i=1;i<ps.length;i++)if(t<=X[i]){const p=ps[i-1],q=ps[i],f=(t-p[0])/(q[0]-p[0]),m0=S.m0[i],m1=S.m1[i],d=q[0]-p[0];return (2*f*f*f-3*f*f+1)*p[1]+(f*f*f-2*f*f+f)*d*m0+(-2*f*f*f+3*f*f)*q[1]+(f*f*f-f*f)*d*m1;}return ps.at(-1)[1];}
 // One cross-section for rendering, liquid, ray sweeps and fracture surfaces.
 // Rectangular bodies become circular at their own shoulder/neck heights.
 function bottleSection(b,y,inset=0){const f=radiusAt(b,y),blend=THREE.MathUtils.smoothstep((y+b.h/2)/b.h,b.shoulder,b.neck);return {rx:Math.max(.001,b.w*f/2-inset),rz:Math.max(.001,THREE.MathUtils.lerp(b.depth,b.w,blend)*f/2-inset),power:THREE.MathUtils.lerp(b.power,2,blend)};}
-function surfPoint(b,a,y,inset=0){const {rx,rz,power}=bottleSection(b,y,inset),sx=Math.sin(a),sz=Math.cos(a),pow=2/power;return new THREE.Vector3(Math.sign(sx)*Math.pow(Math.abs(sx),pow)*rx,y,Math.sign(sz)*Math.pow(Math.abs(sz),pow)*rz);}
+function sectionPoint({rx,rz,power},a,y){const sx=Math.sin(a),sz=Math.cos(a),pow=2/power;return new THREE.Vector3(Math.sign(sx)*Math.pow(Math.abs(sx),pow)*rx,y,Math.sign(sz)*Math.pow(Math.abs(sz),pow)*rz);}
+function surfPoint(b,a,y,inset=0){return sectionPoint(bottleSection(b,y,inset),a,y);}
 // A closed band following the actual glass outline, also used for the heel.
 function profileBand(b,lo,hi,outset=0,segments=40){const positions=[],indices=[],rings=12;
  for(let j=0;j<=rings;j++)for(let k=0;k<segments;k++){const p=surfPoint(b,k/segments*TAU,(lo+(hi-lo)*j/rings-.5)*b.h,-outset);positions.push(p.x,p.y,p.z);}
@@ -37,8 +45,9 @@ function profileBand(b,lo,hi,outset=0,segments=40){const positions=[],indices=[]
  for(let k=0;k<segments;k++){const next=(k+1)%segments;indices.push(bottom,next,k,bottom+1,rings*segments+k,rings*segments+next);}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
-function surfaceNormal(b,a,y){const da=surfPoint(b,a+.0001,y).sub(surfPoint(b,a-.0001,y)),dy=surfPoint(b,a,y+.0001).sub(surfPoint(b,a,y-.0001));return da.cross(dy).normalize();}
-function mergeGeometry(gs){let p=[],n=[];for(let g of gs){const arr=Array.from(g.attributes.position.array);for(let i=g.userData.surfaceCount*3;i<arr.length;i++)arr[i]=0;p.push(...arr);n.push(...g.attributes.normal.array);}let g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));return g;}
+// Both angular samples lie on the same cross-section, so it is evaluated once for them.
+function surfaceNormal(b,a,y){const sec=bottleSection(b,y),da=sectionPoint(sec,a+.0001,y).sub(sectionPoint(sec,a-.0001,y)),dy=surfPoint(b,a,y+.0001).sub(surfPoint(b,a,y-.0001));return da.cross(dy).normalize();}
+function mergeGeometry(gs){let size=0;for(const g of gs)size+=g.attributes.position.array.length;const p=new Float32Array(size),n=new Float32Array(size);let at=0;for(const g of gs){const a=g.attributes.position.array;p.set(a.subarray(0,g.userData.surfaceCount*3),at);n.set(g.attributes.normal.array,at);at+=a.length;}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('normal',new THREE.BufferAttribute(n,3));return g;}
 function makeLiquid(ob){const b=brands[ob.idx],points=[],rings=[.035,...b.profile.filter(p=>p[0]>.035&&p[0]<.97).map(p=>p[0]),.97];const vertices=[],triangles=[],edges=[];
 for(let j=0;j<rings.length;j++)for(let k=0;k<24;k++){let p=surfPoint(b,k/24*TAU,-b.h/2+rings[j]*b.h,.045);vertices.push(p);if(j){edges.push([vertices.length-1,vertices.length-25]);}if(k)edges.push([vertices.length-1,vertices.length-2]);if(k===23)edges.push([vertices.length-1,vertices.length-24]);}
 for(let j=0;j<rings.length-1;j++)for(let k=0;k<24;k++){let a=j*24+k,c=j*24+(k+1)%24;triangles.push(a,c,c+24,a,c+24,a+24);}for(let k=1;k<23;k++)triangles.push(0,k+1,k,(rings.length-1)*24,(rings.length-1)*24+k,(rings.length-1)*24+k+1);
@@ -61,10 +70,19 @@ let axes;if(!taper){axes=[new CANNON.Vec3(0,1,0)];for(let k=0;k<M/2;k++){const a
 return {shape:setShapeGroup(new CANNON.ConvexPolyhedron({vertices:verts,faces,axes}),SG.PROXY),offset:new CANNON.Vec3(0,cy,0)};}
 // Drop the proxy of a row once half of its glass is gone, so other bottles can fall into the broken section.
 function refreshProxies(ob){for(let row=0;row<R;row++){if(!ob.proxies[row])continue;const inRow=ob.parts.filter(p=>p.row===row);if(inRow.some(p=>!p.attached)){ob.body.removeShape(ob.proxies[row]);ob.proxies[row]=null;for(const part of inRow)if(part.attached)part.shape.collisionFilterMask=SG.DEF|SG.PLANK|SG.BASE|SG.PROXY|SG.DEBRIS;}}}
-function pushAll(dst,src){for(let i=0;i<src.length;i++)dst.push(src[i]);}
 // Bake meshes (with their local transforms) into one non-indexed geometry: one draw call instead of many.
-function mergeMeshes(meshes){const pos=[],nor=[],uv=[];for(const m of meshes){m.updateMatrix();const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();g.applyMatrix4(m.matrix);if(!g.attributes.normal)g.computeVertexNormals();pushAll(pos,g.attributes.position.array);pushAll(nor,g.attributes.normal.array);if(g.attributes.uv)pushAll(uv,g.attributes.uv.array);else for(let i=0;i<g.attributes.position.count;i++)uv.push(0,0);g.dispose();}
-const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));out.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));out.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));return out;}
+// Parts without an index but with normals (glass cells, label scraps) are transformed straight into the output
+// arrays with the same vector math as BufferGeometry.applyMatrix4, instead of cloning every part first.
+const _mmV=new THREE.Vector3(),_mmN=new THREE.Matrix3();
+function mergeMeshes(meshes){let size=0;const list=[];
+ for(const m of meshes){m.updateMatrix();let g=m.geometry,baked=false;if(g.index||!g.attributes.normal){g=g.index?g.toNonIndexed():g.clone();g.applyMatrix4(m.matrix);if(!g.attributes.normal)g.computeVertexNormals();baked=true;}list.push({m,g,baked});size+=g.attributes.position.count;}
+ const pos=new Float32Array(size*3),nor=new Float32Array(size*3),uv=new Float32Array(size*2);let at=0;
+ for(const {m,g,baked} of list){const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv,n=P.count;
+  if(baked){pos.set(P.array,at*3);nor.set(N.array,at*3);}
+  else{_mmN.getNormalMatrix(m.matrix);for(let i=0;i<n;i++){const k=(at+i)*3;_mmV.fromBufferAttribute(P,i).applyMatrix4(m.matrix);pos[k]=_mmV.x;pos[k+1]=_mmV.y;pos[k+2]=_mmV.z;_mmV.fromBufferAttribute(N,i).applyNormalMatrix(_mmN);nor[k]=_mmV.x;nor[k+1]=_mmV.y;nor[k+2]=_mmV.z;}}
+  if(U)uv.set(U.array.subarray(0,n*2),at*2);
+  at+=n;if(baked)g.dispose();}
+ const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.BufferAttribute(pos,3));out.setAttribute('normal',new THREE.BufferAttribute(nor,3));out.setAttribute('uv',new THREE.BufferAttribute(uv,2));return out;}
 // Settled debris is baked into a few big static buffers (one draw call per material) and its physics body is removed.
 const edgeMat=new THREE.LineBasicMaterial({color:0xcce0d3,transparent:true,opacity:.12});
 let staticBatches=new Map(),staticObjects=[];
