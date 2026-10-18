@@ -5,7 +5,11 @@
   "scripts": {
     "start": "node scripts/serve.cjs",
     "check": "node scripts/check.cjs",
-    "test": "node scripts/quality.cjs && node scripts/audio.cjs && node scripts/drypage.cjs && node scripts/champagne.cjs && node scripts/smoke.cjs"
+    "test": "node scripts/quality.cjs && node scripts/audio.cjs && node scripts/drypage.cjs && node scripts/champagne.cjs && node scripts/smoke.cjs",
+    "build": "node scripts/build.cjs"
   },
-  "devDependencies": { "playwright-core": "1.62.1" }
+  "devDependencies": {
+    "esbuild": "^0.25.12",
+    "playwright-core": "1.62.1"
+  }
 }
